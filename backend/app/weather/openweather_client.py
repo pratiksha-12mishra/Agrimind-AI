@@ -8,7 +8,7 @@ API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
 
 def get_weather(city: str):
-    url = "https://api.openweathermap.org/data/2.5/weather"
+    url = url = "https://api.openweathermap.org/data/2.5/forecast"
 
     params = {
         "q": city,
@@ -20,14 +20,18 @@ def get_weather(city: str):
 
     if response.status_code != 200:
         return {
-            "error": response.json()
+            "error": "City not found"
         }
 
     data = response.json()
+    rain_probability = data["list"][0]["pop"] * 100
+
+    forecast = data["list"][0]
 
     return {
-        "city": data["name"],
-        "temperature": data["main"]["temp"],
-        "humidity": data["main"]["humidity"],
-        "weather": data["weather"][0]["description"]
+        "city": data["city"]["name"],
+        "temperature": forecast["main"]["temp"],
+        "humidity": forecast["main"]["humidity"],
+        "weather": forecast["weather"][0]["description"],
+        "rain_probability": rain_probability
     }
