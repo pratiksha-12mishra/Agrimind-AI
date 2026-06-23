@@ -80,13 +80,16 @@ def decide_irrigation(crop, growth_stage, soil_moisture, temperature, humidity, 
     water_required_raw = float(_REGRESSOR.predict(features)[0])
     water_required_raw = max(0, round(water_required_raw, 1))
 
-    if not irrigation_needed:
+    if soil_moisture < 15:
+        # Critically low moisture overrides everything else — crop is already stressed
+        decision = "Irrigate Now"
+    elif not irrigation_needed:
         decision = "Delay Irrigation"
         water_required_raw = 0.0
     elif rain_probability > 70:
         decision = "Delay Irrigation"
         water_required_raw = 0.0
-    elif soil_moisture < 30 and rain_probability < 40:
+    elif soil_moisture < 30 and rain_probability < 50:
         decision = "Irrigate Now"
     else:
         decision = "Irrigate Within 24 Hours"
