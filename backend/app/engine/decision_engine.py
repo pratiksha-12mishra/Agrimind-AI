@@ -115,6 +115,8 @@ if __name__ == "__main__":
         dict(crop="wheat", growth_stage="flowering", soil_moisture=22, temperature=33, humidity=40, rain_probability=15),
         dict(crop="rice", growth_stage="vegetative", soil_moisture=55, temperature=28, humidity=70, rain_probability=80),
         dict(crop="cotton", growth_stage="seedling", soil_moisture=45, temperature=30, humidity=50, rain_probability=45),
+        dict(crop="wheat", growth_stage="flowering", soil_moisture=1, temperature=33, humidity=40, rain_probability=45),
+        dict(crop="wheat", growth_stage="flowering", soil_moisture=5, temperature=33, humidity=40, rain_probability=45),
     ]
     for case in test_cases:
         result = decide_irrigation(**case)
