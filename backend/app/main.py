@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.weather.openweather_client import get_weather
+from app.weather.openweather_client import get_weather
+from app.engine.decision_engine import decide_irrigation
 from pydantic import BaseModel, Field
-from backend.app.engine.decision_engine import decide_irrigation
 
 app = FastAPI()
 app.add_middleware(
