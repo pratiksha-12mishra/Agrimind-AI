@@ -12,8 +12,8 @@ import pickle
 import pandas as pd
 import os
 
-from water_lookup import get_base_water_requirement, CROPS, GROWTH_STAGES
-from explanation import generate_explanation
+from .water_lookup import get_base_water_requirement, CROPS, GROWTH_STAGES
+from .explanation import generate_explanation
 
 # ---- Load models once at import time ----
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
