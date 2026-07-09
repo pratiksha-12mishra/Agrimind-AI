@@ -3,6 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.weather.openweather_client import get_weather
 from app.engine.decision_engine import decide_irrigation
 from pydantic import BaseModel, Field
+from app.routes import farms
+from app.routes import weather
+from app.routes import history
+from app.routes import notifications
+from app.routes import motor
+from app.routes import voice
 
 app = FastAPI()
 app.add_middleware(
@@ -12,6 +18,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(farms.router)
+app.include_router(weather.router)
+app.include_router(history.router)
+app.include_router(notifications.router)
+app.include_router(motor.router)
+app.include_router(voice.router)
 
 class RecommendationRequest(BaseModel):
     crop: str = Field(
