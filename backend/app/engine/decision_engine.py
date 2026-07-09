@@ -12,8 +12,8 @@ import pickle
 import pandas as pd
 import os
 
-from .water_lookup import get_base_water_requirement, CROPS, GROWTH_STAGES
-from .explanation import generate_explanation
+from water_lookup import get_base_water_requirement, CROPS, GROWTH_STAGES
+from explanation import generate_explanation
 
 # ---- Load models once at import time ----
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -77,9 +77,10 @@ def decide_irrigation(crop, growth_stage, soil_moisture, temperature, humidity, 
     )
 
     irrigation_needed = int(_CLASSIFIER.predict(features)[0])
+    confidence_score = float(_CLASSIFIER.predict_proba(features)[0][irrigation_needed])
+    confidence_pct = round(confidence_score * 100, 1)
     water_required_raw = float(_REGRESSOR.predict(features)[0])
     water_required_raw = max(0, round(water_required_raw, 1))
-
     if soil_moisture < 15:
         # Critically low moisture overrides everything else — crop is already stressed
         decision = "Irrigate Now"
@@ -100,12 +101,15 @@ def decide_irrigation(crop, growth_stage, soil_moisture, temperature, humidity, 
         rain_probability=rain_probability,
         temperature=temperature,
         water_required=water_required_raw,
+        confidence=confidence_pct,
     )
 
     return {
         "decision": decision,
         "water_required": f"{water_required_raw} L/m²",
+        "water_required_raw": water_required_raw,
         "explanation": explanation,
+        "confidence": confidence_pct,
     }
 
 
@@ -120,6 +124,9 @@ if __name__ == "__main__":
     ]
     for case in test_cases:
         result = decide_irrigation(**case)
-        print(case)
-        print("->", result)
+        print(f"Input: soil={case['soil_moisture']}%, rain={case['rain_probability']}%, crop={case['crop']}")
+        print(f"  Decision:    {result['decision']}")
+        print(f"  Water:       {result['water_required']}")
+        print(f"  Confidence:  {result['confidence']}%")
+        print(f"  Explanation: {result['explanation']}")
         print()
