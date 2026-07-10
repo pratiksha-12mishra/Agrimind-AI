@@ -9,8 +9,20 @@ from app.routes import history
 from app.routes import notifications
 from app.routes import motor
 from app.routes import voice
+from app.routes import schedule
+from app.db.database import create_db_and_tables
+from fastapi import Depends
+from sqlmodel import Session
+from app.db.database import get_session
+from app.db.models import RecommendationHistory
+
 
 app = FastAPI()
+
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,6 +37,7 @@ app.include_router(history.router)
 app.include_router(notifications.router)
 app.include_router(motor.router)
 app.include_router(voice.router)
+app.include_router(schedule.router)
 
 class RecommendationRequest(BaseModel):
     crop: str = Field(
@@ -48,12 +61,12 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/weather/{city}")
-def weather(city: str):
-    return get_weather(city)
 
 @app.post("/recommend")
-def recommend(data: RecommendationRequest):
+def recommend(
+    data: RecommendationRequest,
+    session: Session = Depends(get_session)
+):
 
     weather = get_weather(data.city)
 
@@ -76,6 +89,22 @@ def recommend(data: RecommendationRequest):
         humidity=humidity,
         rain_probability=rain_probability,
     )
+
+    history = RecommendationHistory(
+        city=data.city,
+        crop=data.crop,
+        growth_stage=data.growth_stage,
+        soil_moisture=data.soil_moisture,
+        temperature=temperature,
+        humidity=humidity,
+        rain_probability=rain_probability,
+        decision=result["decision"],
+        water_required=result["water_required"],
+        confidence=result["confidence"],
+    )
+
+    session.add(history)
+    session.commit()
 
     return {
         "weather": weather,

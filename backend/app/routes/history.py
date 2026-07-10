@@ -1,11 +1,25 @@
-from fastapi import APIRouter
+from typing import List
 
-router = APIRouter(prefix="/history", tags=["History"])
+from fastapi import APIRouter, Depends
+from sqlmodel import Session, select
+
+from app.db.database import get_session
+from app.db.models import RecommendationHistory
+
+router = APIRouter(
+    prefix="/history",
+    tags=["History"]
+)
 
 
-@router.get("/")
-def history_placeholder():
-    return {
-        "status": "coming_soon",
-        "message": "History module is under development."
-    }
+@router.get("/", response_model=List[RecommendationHistory])
+def get_history(
+    session: Session = Depends(get_session)
+):
+    history = session.exec(
+        select(RecommendationHistory).order_by(
+            RecommendationHistory.created_at.desc()
+        )
+    ).all()
+
+    return history
