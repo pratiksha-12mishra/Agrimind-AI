@@ -111,7 +111,53 @@ def decide_irrigation(crop, growth_stage, soil_moisture, temperature, humidity, 
         "explanation": explanation,
         "confidence": confidence_pct,
     }
+def generate_weekly_schedule(
+    crop,
+    growth_stage,
+    soil_moisture,
+    forecast
+):
+    """
+    Generates a day-wise irrigation schedule using
+    the weather forecast and the existing XGBoost
+    irrigation decision engine.
 
+    Returns:
+        List[dict]
+    """
+
+    schedule = []
+    current_soil = soil_moisture
+
+    for day in forecast:
+
+        recommendation = decide_irrigation(
+            crop=crop,
+            growth_stage=growth_stage,
+            soil_moisture=current_soil,
+            temperature=day["temperature"],
+            humidity=day["humidity"],
+            rain_probability=day["rain_probability"],
+        )
+
+        schedule.append({
+            "date": day["date"],
+            "weather": day["weather"],
+            "temperature": day["temperature"],
+            "rain_probability": day["rain_probability"],
+            "decision": recommendation["decision"],
+            "water_required": recommendation["water_required"],
+            "confidence": recommendation["confidence"],
+            "explanation": recommendation["explanation"],
+        })
+
+        # Simple approximation for the next day's soil moisture
+        if recommendation["decision"] == "Irrigate Now":
+            current_soil = min(100, current_soil + 30)
+        else:
+            current_soil = max(0, current_soil - 5)
+
+    return schedule
 
 # ---- Quick manual test when run directly ----
 if __name__ == "__main__":
