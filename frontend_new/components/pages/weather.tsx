@@ -43,8 +43,8 @@ export default function Weather({ isLoggedIn }: WeatherProps) {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Weather Forecast</h1>
-          <p className="text-muted-foreground">Auto-detected location: {currentWeather.location}</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Live Weather Forecast</h1>
+          <p className="text-muted-foreground">Real-time weather data for irrigation planning: {currentWeather.location}</p>
         </div>
 
         {/* Current Weather */}
@@ -106,12 +106,12 @@ export default function Weather({ isLoggedIn }: WeatherProps) {
         </div>
 
         {/* Weather Alerts */}
-        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-yellow-900 mb-4">Weather Alerts</h3>
-          <div className="space-y-2 text-yellow-800 text-sm">
-            <p>• Light rain expected on Thursday. Adjust your irrigation schedule accordingly.</p>
-            <p>• High UV index today. Ensure proper crop protection if needed.</p>
-            <p>• Wind speed may increase tomorrow. Monitor for potential crop damage.</p>
+        <div className="mt-8 bg-accent/10 border border-accent/20 rounded-lg p-6">
+          <h3 className="text-lg font-bold text-foreground mb-4">Irrigation Planning Tips</h3>
+          <div className="space-y-2 text-muted-foreground text-sm">
+            <p>• 80% rain probability on Thursday. Consider delaying irrigation until after rain.</p>
+            <p>• Low rain chance today and tomorrow. Irrigation is recommended if soil moisture is below 50%.</p>
+            <p>• Use this weather forecast to optimize your irrigation schedule and save water.</p>
           </div>
         </div>
       </div>

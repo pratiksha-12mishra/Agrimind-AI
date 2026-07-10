@@ -11,8 +11,8 @@ export default function Notifications({ isLoggedIn }: NotificationsProps) {
     {
       id: 1,
       type: 'high',
-      title: 'Soil Moisture Critical',
-      message: 'Soil moisture has dropped below 40%. Irrigation needed immediately.',
+      title: 'Soil Moisture is Low',
+      message: 'Soil moisture has dropped below 30%. Irrigation is recommended.',
       time: '2 hours ago',
       icon: AlertCircle,
       color: 'red',
@@ -20,26 +20,26 @@ export default function Notifications({ isLoggedIn }: NotificationsProps) {
     {
       id: 2,
       type: 'medium',
-      title: 'Weather Alert',
-      message: 'Heavy rain expected tomorrow. Consider postponing irrigation.',
+      title: 'Rain Expected Tomorrow',
+      message: 'Rain probability is 75% tomorrow. Irrigation can be delayed by 24 hours.',
       time: '4 hours ago',
       icon: AlertTriangle,
       color: 'yellow',
     },
     {
       id: 3,
-      type: 'high',
-      title: 'Motor Overheating',
-      message: 'Motor temperature is rising. Check for blockages or reduce usage.',
+      type: 'medium',
+      title: 'Irrigation Recommended',
+      message: 'Irrigation is recommended within 24 hours to maintain healthy crop growth.',
       time: '6 hours ago',
-      icon: AlertCircle,
-      color: 'red',
+      icon: AlertTriangle,
+      color: 'yellow',
     },
     {
       id: 4,
       type: 'low',
-      title: 'System Update Available',
-      message: 'A new version of AgriMind is available with improved features.',
+      title: 'Water-Saving Opportunity',
+      message: 'Due to forecasted rain, you can save approximately 25% of scheduled water.',
       time: '1 day ago',
       icon: Info,
       color: 'blue',
@@ -47,8 +47,8 @@ export default function Notifications({ isLoggedIn }: NotificationsProps) {
     {
       id: 5,
       type: 'medium',
-      title: 'Humidity Optimal',
-      message: 'Humidity levels are perfect for crop growth today.',
+      title: 'Optimal Weather Conditions',
+      message: 'Humidity and temperature levels are optimal for irrigation efficiency.',
       time: '1 day ago',
       icon: CheckCircle,
       color: 'green',
@@ -56,8 +56,8 @@ export default function Notifications({ isLoggedIn }: NotificationsProps) {
     {
       id: 6,
       type: 'medium',
-      title: 'Prediction Ready',
-      message: 'Your daily AI prediction is ready. Check the results for recommendations.',
+      title: 'AI Recommendation Ready',
+      message: 'Your daily AI irrigation recommendation is ready. Check the results page.',
       time: '2 days ago',
       icon: CheckCircle,
       color: 'green',
@@ -65,8 +65,8 @@ export default function Notifications({ isLoggedIn }: NotificationsProps) {
     {
       id: 7,
       type: 'low',
-      title: 'Weekly Summary',
-      message: 'Your weekly farming summary is ready. Average yield: 2.4 tons/hectare.',
+      title: 'Smart Notifications Coming',
+      message: 'Smart irrigation notifications will be available after sensor setup is complete.',
       time: '3 days ago',
       icon: Info,
       color: 'blue',
@@ -74,8 +74,8 @@ export default function Notifications({ isLoggedIn }: NotificationsProps) {
     {
       id: 8,
       type: 'high',
-      title: 'Soil Moisture Low',
-      message: 'Soil moisture is at 45%. Recommended watering schedule updated.',
+      title: 'No Irrigation Needed',
+      message: 'Soil moisture is adequate. Hold off on irrigation for now.',
       time: '1 week ago',
       icon: AlertCircle,
       color: 'red',
@@ -125,8 +125,8 @@ export default function Notifications({ isLoggedIn }: NotificationsProps) {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Notifications</h1>
-          <p className="text-muted-foreground">History of all alerts and updates</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Smart Irrigation Notifications</h1>
+          <p className="text-muted-foreground">Alerts about soil moisture, weather, and irrigation recommendations</p>
         </div>
 
         {/* Summary Cards */}

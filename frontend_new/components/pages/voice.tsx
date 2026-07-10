@@ -46,8 +46,8 @@ export default function Voice({ isLoggedIn }: VoiceProps) {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Voice Assistant</h1>
-          <p className="text-muted-foreground">Speak naturally in your preferred language</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Smart Irrigation Voice Assistant</h1>
+          <p className="text-muted-foreground">Ask AgriMind about soil moisture, weather, watering schedule, and irrigation recommendations</p>
         </div>
 
         {/* Language Selection */}
@@ -107,40 +107,40 @@ export default function Voice({ isLoggedIn }: VoiceProps) {
           <h2 className="text-lg font-semibold text-foreground mb-4">Try These Voice Commands</h2>
           <div className="space-y-3">
             <div className="flex items-start gap-3 p-3 bg-background rounded-lg hover:border-primary/50 cursor-pointer transition-all border border-border">
-              <span className="text-xl">🌱</span>
-              <div className="text-left">
-                <p className="font-medium text-foreground">What is the soil moisture level?</p>
-                <p className="text-sm text-muted-foreground">Get real-time soil moisture data</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-3 bg-background rounded-lg hover:border-primary/50 cursor-pointer transition-all border border-border">
-              <span className="text-xl">🌡️</span>
-              <div className="text-left">
-                <p className="font-medium text-foreground">Current temperature and humidity</p>
-                <p className="text-sm text-muted-foreground">Get weather conditions</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-3 bg-background rounded-lg hover:border-primary/50 cursor-pointer transition-all border border-border">
               <span className="text-xl">💧</span>
               <div className="text-left">
-                <p className="font-medium text-foreground">Turn on the irrigation motor</p>
-                <p className="text-sm text-muted-foreground">Control your irrigation system</p>
+                <p className="font-medium text-foreground">What is the soil moisture level?</p>
+                <p className="text-sm text-muted-foreground">Get current soil moisture data</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-3 bg-background rounded-lg hover:border-primary/50 cursor-pointer transition-all border border-border">
+              <span className="text-xl">🌤️</span>
+              <div className="text-left">
+                <p className="font-medium text-foreground">Show me the weather forecast</p>
+                <p className="text-sm text-muted-foreground">Get live weather and rain probability</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-3 bg-background rounded-lg hover:border-primary/50 cursor-pointer transition-all border border-border">
+              <span className="text-xl">🚿</span>
+              <div className="text-left">
+                <p className="font-medium text-foreground">Should I irrigate today?</p>
+                <p className="text-sm text-muted-foreground">Get irrigation recommendation</p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-3 bg-background rounded-lg hover:border-primary/50 cursor-pointer transition-all border border-border">
               <span className="text-xl">📊</span>
               <div className="text-left">
-                <p className="font-medium text-foreground">Show today's recommendations</p>
-                <p className="text-sm text-muted-foreground">Get daily farming tips</p>
+                <p className="font-medium text-foreground">How much water do I need?</p>
+                <p className="text-sm text-muted-foreground">Get water requirement in L/m²</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Status */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-          <p className="text-blue-900 text-sm">
-            <span className="font-semibold">Voice Assistant Status:</span> Ready in {languages.find((l) => l.code === language)?.name}
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 text-center">
+          <p className="text-muted-foreground text-sm">
+            <span className="font-semibold">Voice Assistant Status:</span> Coming soon in {languages.find((l) => l.code === language)?.name}
           </p>
         </div>
       </div>

@@ -3,8 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'AgriMind - AI Crop Prediction',
-  description: 'Smart agricultural prediction system for farmers',
+  title: 'AgriMind AI - Smart Irrigation System',
+  description: 'IoT-based smart irrigation system for precision farming with real-time soil moisture and weather monitoring',
   generator: 'v0.app',
   icons: {
     icon: [

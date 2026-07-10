@@ -33,8 +33,8 @@ export default function Contact() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold text-foreground mb-4">Contact Us</h1>
-          <p className="text-lg text-muted-foreground">Get in touch with our support team for any questions or assistance</p>
+          <h1 className="text-4xl font-bold text-foreground mb-4">Contact AgriMind AI</h1>
+          <p className="text-lg text-muted-foreground">Get support for smart irrigation setup, feedback, and agricultural insights</p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8 mb-16">
