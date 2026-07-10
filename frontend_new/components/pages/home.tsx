@@ -26,7 +26,7 @@ export default function Home({ setCurrentTab }: HomeProps) {
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <div className="mb-4">
             <span className="inline-block bg-white/25 backdrop-blur-md px-4 py-1.5 rounded-full text-white text-sm font-medium border border-white/40">
-              🌱 Smart Irrigation Platform
+              💧 Smart Irrigation Platform
             </span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 drop-shadow-lg text-center px-4">
@@ -52,8 +52,8 @@ export default function Home({ setCurrentTab }: HomeProps) {
               <div className="inline-block p-3 rounded-lg bg-white/10 mb-4">
                 <Leaf className="text-primary-foreground" size={24} />
               </div>
-              <h3 className="text-xl font-semibold text-primary-foreground mb-2">Get Prediction</h3>
-              <p className="text-primary-foreground/90">Enter field details and get an irrigation decision.</p>
+              <h3 className="text-xl font-semibold text-primary-foreground mb-2">Get AI Recommendation</h3>
+              <p className="text-primary-foreground/90">Get irrigation decision and water requirements for your field.</p>
             </button>
 
             <button
@@ -97,26 +97,26 @@ export default function Home({ setCurrentTab }: HomeProps) {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="inline-block px-4 py-3 rounded-full bg-primary/15 text-primary font-bold text-lg mb-4">1</div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Login & Setup</h3>
-              <p className="text-muted-foreground">Create your farmer account and add your farm details including location, crop type, and current conditions.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Enter Field Details</h3>
+              <p className="text-muted-foreground">Select your crop, growth stage, soil moisture level, and city location for accurate analysis.</p>
             </div>
             <div className="text-center">
               <div className="inline-block px-4 py-3 rounded-full bg-primary/15 text-primary font-bold text-lg mb-4">2</div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Input Data</h3>
-              <p className="text-muted-foreground">Provide farm parameters like soil type, moisture, rainfall, and seasonal information for accurate predictions.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">AI Fetches Live Weather</h3>
+              <p className="text-muted-foreground">AgriMind checks real-time temperature, humidity, weather conditions, and rain probability for your location.</p>
             </div>
             <div className="text-center">
               <div className="inline-block px-4 py-3 rounded-full bg-primary/15 text-primary font-bold text-lg mb-4">3</div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Get Predictions</h3>
-              <p className="text-muted-foreground">Receive detailed yield predictions, confidence scores, and recommendations to optimize your harvest.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Get Irrigation Decision</h3>
+              <p className="text-muted-foreground">The AI recommends when to irrigate and how much water to apply, along with a confidence score.</p>
             </div>
           </div>
         </div>
 
         {/* CTA Section */}
         <div className="bg-primary rounded-lg p-12 text-center">
-          <h2 className="text-3xl font-bold text-primary-foreground mb-4">Ready to Transform Your Farm?</h2>
-          <p className="text-lg text-primary-foreground/95 mb-8">Join thousands of farmers using AgriMind to boost their productivity and yield.</p>
+          <h2 className="text-3xl font-bold text-primary-foreground mb-4">Stop Guessing. Start Smart Irrigating.</h2>
+          <p className="text-lg text-primary-foreground/95 mb-8">AgriMind AI tells you exactly when to irrigate and how much water to use — reducing water wastage and protecting crop health.</p>
           <button
             onClick={() => setCurrentTab('login')}
             className="inline-flex items-center gap-2 px-8 py-4 rounded-lg bg-primary-foreground text-primary font-semibold hover:opacity-90 transition-opacity"
