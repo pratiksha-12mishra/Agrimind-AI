@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: 'AgriMind AI - Smart Irrigation System',
   description: 'IoT-based smart irrigation system for precision farming with real-time soil moisture and weather monitoring',
   generator: 'v0.app',
+  manifest: '/manifest.json',
   icons: {
     icon: [
       {
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
         type: 'image/svg+xml',
       },
     ],
-    apple: '/apple-icon.png',
+    apple: '/icon-192.png',
   },
 }
 
@@ -40,6 +41,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       <body className="antialiased">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

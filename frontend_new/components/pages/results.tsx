@@ -2,22 +2,28 @@
 
 import { useState, useEffect } from 'react'
 import { AlertCircle, Cloud, Droplets, Zap } from 'lucide-react'
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
 
 export default function Results() {
   const [result, setResult] = useState<any>(null)
   const [weather, setWeather] = useState<any>(null)
+  const [soilMoistureInput, setSoilMoistureInput] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Load from sessionStorage
     const irrigationResult = sessionStorage.getItem('irrigationResult')
     const weatherData = sessionStorage.getItem('weatherData')
+    const soilInput = sessionStorage.getItem('soilMoistureInput')
 
     if (irrigationResult) {
       setResult(JSON.parse(irrigationResult))
     }
     if (weatherData) {
       setWeather(JSON.parse(weatherData))
+    }
+    if (soilInput) {
+      setSoilMoistureInput(parseFloat(soilInput))
     }
 
     setLoading(false)
@@ -66,12 +72,27 @@ export default function Results() {
     return 'bg-primary/10 border-primary text-primary'
   }
 
-  const getMoistureStatus = (moisture: number) => {
-    if (moisture < 30) return 'Dry'
-    if (moisture < 50) return 'Moderate'
-    if (moisture <= 70) return 'Optimal'
-    return 'Saturated'
-  }
+  // Backend field names may not exactly match what we expect.
+  // Fall back safely instead of crashing the whole page.
+  const recommendationText = result.recommendation ?? result.decision ?? 'No recommendation returned'
+  const waterRequired =
+    typeof result.water_required === 'number'
+      ? result.water_required
+      : typeof result.water_liters === 'number'
+      ? result.water_liters
+      : null
+  const confidenceValue = typeof result.confidence === 'number' ? result.confidence : null
+  const explanationText = result.explanation ?? result.reason ?? ''
+  const moistureAnalysisText = result.soil_moisture_analysis ?? ''
+
+  // Soil moisture pie chart data (real value from the form, falls back to 0 if missing)
+  const moistureUsed = soilMoistureInput ?? 0
+  const moistureRemaining = 100 - moistureUsed
+  const moisturePieData = [
+    { name: 'Current Moisture', value: moistureUsed },
+    { name: 'Remaining Capacity', value: moistureRemaining },
+  ]
+  const MOISTURE_COLORS = ['var(--color-primary)', 'var(--color-muted)']
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,9 +104,9 @@ export default function Results() {
           {/* Main Result */}
           <div className="lg:col-span-2 space-y-6">
             {/* Recommendation Card */}
-            <div className={`rounded-lg p-8 border-2 ${getRecommendationColor(result.recommendation)}`}>
+            <div className={`rounded-lg p-8 border-2 ${getRecommendationColor(recommendationText)}`}>
               <p className="text-sm font-semibold uppercase tracking-wide mb-2 opacity-75">Irrigation Decision</p>
-              <h2 className="text-4xl font-bold mb-4">{result.recommendation}</h2>
+              <h2 className="text-4xl font-bold mb-4">{recommendationText}</h2>
               <p className="text-base opacity-90">Based on current soil moisture, weather conditions, and crop requirements.</p>
             </div>
 
@@ -94,7 +115,9 @@ export default function Results() {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-muted-foreground text-sm font-semibold uppercase mb-2">Water Required</p>
-                  <p className="text-5xl font-bold text-foreground">{result.water_required.toFixed(1)}</p>
+                  <p className="text-5xl font-bold text-foreground">
+                    {waterRequired !== null ? waterRequired.toFixed(1) : '—'}
+                  </p>
                   <p className="text-muted-foreground mt-1">Litres per square metre (L/m²)</p>
                 </div>
                 <div className="p-4 rounded-lg bg-primary/10">
@@ -106,30 +129,60 @@ export default function Results() {
             {/* AI Explanation */}
             <div className="bg-card rounded-lg p-8 border border-border">
               <h3 className="text-xl font-bold text-foreground mb-4">AI Explanation</h3>
-              <p className="text-muted-foreground leading-relaxed">{result.explanation}</p>
+              <p className="text-muted-foreground leading-relaxed">
+                {explanationText || 'No explanation provided by the backend.'}
+              </p>
             </div>
 
-            {/* Soil Moisture Analysis */}
+            {/* Soil Moisture Analysis + Pie Chart */}
             <div className="bg-card rounded-lg p-8 border border-border">
               <h3 className="text-xl font-bold text-foreground mb-6">Soil Moisture Analysis</h3>
-              <div className="space-y-4">
-                <p className="text-muted-foreground">{result.soil_moisture_analysis}</p>
-                <div className="mt-4 p-4 bg-secondary rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-foreground">Current Soil Moisture</span>
-                    <span className="text-lg font-bold text-foreground">{result.confidence}%</span>
+              <div className="grid sm:grid-cols-2 gap-6 items-center">
+                <div className="space-y-4">
+                  <p className="text-muted-foreground">
+                    {moistureAnalysisText || 'No soil moisture analysis provided by the backend.'}
+                  </p>
+                  <div className="mt-4 p-4 bg-secondary rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-foreground">Current Soil Moisture</span>
+                      <span className="text-lg font-bold text-foreground">
+                        {soilMoistureInput !== null ? `${soilMoistureInput}%` : '—'}
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-3">
+                      <div
+                        className="bg-primary h-3 rounded-full transition-all"
+                        style={{ width: `${Math.min(moistureUsed, 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground mt-2 px-1">
+                      <span>Dry 0%</span>
+                      <span>Optimal 50–70%</span>
+                      <span>Saturated 100%</span>
+                    </div>
                   </div>
-                  <div className="w-full bg-muted rounded-full h-3">
-                    <div
-                      className="bg-primary h-3 rounded-full transition-all"
-                      style={{ width: `${Math.min(result.confidence, 100)}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground mt-2 px-1">
-                    <span>Dry 0%</span>
-                    <span>Optimal 50–70%</span>
-                    <span>Saturated 100%</span>
-                  </div>
+                </div>
+
+                {/* Pie chart */}
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={moisturePieData}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={50}
+                        outerRadius={80}
+                        paddingAngle={2}
+                      >
+                        {moisturePieData.map((entry, index) => (
+                          <Cell key={entry.name} fill={MOISTURE_COLORS[index % MOISTURE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => `${value}%`} />
+                      <Legend verticalAlign="bottom" height={36} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </div>
@@ -172,14 +225,14 @@ export default function Results() {
             )}
 
             {/* Confidence Score */}
-            {result.confidence && (
+            {confidenceValue !== null && (
               <div className="bg-card rounded-lg p-6 border border-border">
                 <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                   <Zap size={20} />
                   AI Confidence
                 </h3>
                 <div className="text-center">
-                  <p className="text-5xl font-bold text-primary mb-2">{result.confidence}%</p>
+                  <p className="text-5xl font-bold text-primary mb-2">{confidenceValue}%</p>
                   <p className="text-sm text-muted-foreground">AI Recommendation Confidence Score</p>
                 </div>
               </div>
@@ -209,6 +262,16 @@ export default function Results() {
             </div>
           </div>
         </div>
+
+        {/* Debug: raw backend response — remove before final demo */}
+        <details className="mt-10 bg-card rounded-lg p-4 border border-border">
+          <summary className="cursor-pointer text-sm font-semibold text-muted-foreground">
+            Debug: raw backend response
+          </summary>
+          <pre className="mt-3 text-xs overflow-auto p-3 bg-secondary rounded-lg text-foreground">
+            {JSON.stringify(result, null, 2)}
+          </pre>
+        </details>
       </div>
     </div>
   )

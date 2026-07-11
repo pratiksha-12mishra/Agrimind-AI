@@ -1,12 +1,97 @@
 'use client'
 
-import { Cloud, CloudRain, Sun, Wind } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Cloud, CloudRain, Loader2, MapPin, AlertCircle } from 'lucide-react'
+import { apiClient, WeatherData } from '@/lib/api'
 
 interface WeatherProps {
   isLoggedIn: boolean
 }
 
 export default function Weather({ isLoggedIn }: WeatherProps) {
+  const [weather, setWeather] = useState<WeatherData | null>(null)
+  const [detectedCity, setDetectedCity] = useState<string | null>(null)
+  const [manualCity, setManualCity] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchWeatherForCity = async (city: string) => {
+    setLoading(true)
+    setError(null)
+    const result = await apiClient.getWeather(city)
+    if (result.error || !result.data) {
+      setError(result.error || 'Unable to fetch weather for this location')
+      setWeather(null)
+    } else {
+      setWeather(result.data)
+    }
+    setLoading(false)
+  }
+
+ const detectLocationAndFetch = () => {
+    setError(null)
+    setLoading(true)
+
+    if (!navigator.geolocation) {
+      setError('Your browser does not support location detection. Enter a city manually below.')
+      setLoading(false)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords
+          const geoRes = await fetch(`/api/geocode?lat=${latitude}&lon=${longitude}`)
+          const geoData = await geoRes.json()
+
+          if (!geoRes.ok || !geoData.candidates || geoData.candidates.length === 0) {
+            setError('Could not determine your city from your location. Enter a city manually below.')
+            setLoading(false)
+            return
+          }
+
+          // Try each candidate place name until the weather API accepts one
+          let succeeded = false
+          for (const candidate of geoData.candidates as string[]) {
+            const result = await apiClient.getWeather(candidate)
+            if (!result.error && result.data) {
+              setDetectedCity(candidate)
+              setWeather(result.data)
+              succeeded = true
+              break
+            }
+          }
+
+          if (!succeeded) {
+            setDetectedCity(geoData.city)
+            setError(
+              `Detected "${geoData.city}" but it isn't recognized by the weather service. Enter a nearby city manually below.`
+            )
+          }
+        } catch (err: any) {
+          setError('Location lookup failed. Enter a city manually below.')
+        } finally {
+          setLoading(false)
+        }
+      },
+      () => {
+        setError('Location permission denied. Enter a city manually below.')
+        setLoading(false)
+      }
+    
+  
+     
+    )
+  }
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      detectLocationAndFetch()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn])
+
   if (!isLoggedIn) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -17,101 +102,129 @@ export default function Weather({ isLoggedIn }: WeatherProps) {
     )
   }
 
-  const currentWeather = {
-    temp: 28,
-    condition: 'Partly Cloudy',
-    humidity: 65,
-    windSpeed: 12,
-    location: 'Your Farm, District, State',
-    feelsLike: 30,
-    uv: 6,
-    visibility: 10,
-  }
-
+  // Placeholder forecast — backend has no 7-day forecast endpoint yet
   const forecast = [
-    { day: 'Today', high: 32, low: 24, condition: 'Sunny', icon: '☀️', rain: '0%' },
-    { day: 'Tomorrow', high: 31, low: 23, condition: 'Partly Cloudy', icon: '⛅', rain: '10%' },
-    { day: 'Thursday', high: 28, low: 22, condition: 'Rainy', icon: '🌧️', rain: '80%' },
-    { day: 'Friday', high: 29, low: 21, condition: 'Sunny', icon: '☀️', rain: '5%' },
-    { day: 'Saturday', high: 30, low: 22, condition: 'Partly Cloudy', icon: '⛅', rain: '20%' },
-    { day: 'Sunday', high: 32, low: 24, condition: 'Sunny', icon: '☀️', rain: '0%' },
-    { day: 'Monday', high: 31, low: 23, condition: 'Partly Cloudy', icon: '⛅', rain: '15%' },
+    { day: 'Today', condition: 'See current weather above', icon: '☀️' },
+    { day: 'Tomorrow', condition: 'Forecast coming soon', icon: '⛅' },
+    { day: 'Day 3', condition: 'Forecast coming soon', icon: '⛅' },
+    { day: 'Day 4', condition: 'Forecast coming soon', icon: '⛅' },
   ]
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Live Weather Forecast</h1>
-          <p className="text-muted-foreground">Real-time weather data for irrigation planning: {currentWeather.location}</p>
+        <div className="mb-8 flex items-start justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground mb-2">Live Weather Forecast</h1>
+            <p className="text-muted-foreground flex items-center gap-2">
+              <MapPin size={16} />
+              {weather?.city || detectedCity || 'Detecting your location...'}
+            </p>
+          </div>
+          <button
+            onClick={detectLocationAndFetch}
+            disabled={loading}
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+          >
+            {loading ? 'Detecting...' : 'Refresh Location'}
+          </button>
         </div>
 
-        {/* Current Weather */}
-        <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-border rounded-lg p-8 mb-8">
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Left side - Main weather */}
-            <div className="flex flex-col justify-center">
-              <div className="text-6xl font-bold text-foreground mb-2">{currentWeather.temp}°C</div>
-              <div className="text-2xl text-muted-foreground mb-4">{currentWeather.condition}</div>
-              <div className="text-sm text-muted-foreground">Feels like {currentWeather.feelsLike}°C</div>
-            </div>
-
-            {/* Right side - Details */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-card border border-border rounded-lg p-4">
-                <div className="text-sm text-muted-foreground mb-1">Humidity</div>
-                <div className="text-3xl font-bold text-foreground">{currentWeather.humidity}%</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4">
-                <div className="text-sm text-muted-foreground mb-1">Wind Speed</div>
-                <div className="text-3xl font-bold text-foreground">{currentWeather.windSpeed} km/h</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4">
-                <div className="text-sm text-muted-foreground mb-1">UV Index</div>
-                <div className="text-3xl font-bold text-foreground">{currentWeather.uv}</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4">
-                <div className="text-sm text-muted-foreground mb-1">Visibility</div>
-                <div className="text-3xl font-bold text-foreground">{currentWeather.visibility} km</div>
+        {/* Manual city fallback */}
+        {error && (
+          <div className="mb-6 bg-destructive/10 border border-destructive rounded-lg p-4 flex gap-3 items-start flex-wrap">
+            <AlertCircle className="text-destructive flex-shrink-0" size={20} />
+            <div className="flex-1 min-w-[200px]">
+              <p className="text-sm text-destructive font-semibold">{error}</p>
+              <div className="flex gap-2 mt-3">
+                <input
+                  type="text"
+                  value={manualCity}
+                  onChange={(e) => setManualCity(e.target.value)}
+                  placeholder="Enter city name e.g. Bhopal"
+                  className="flex-1 px-3 py-2 rounded-lg border border-border bg-input text-foreground text-sm"
+                />
+                <button
+                  onClick={() => manualCity && fetchWeatherForCity(manualCity)}
+                  disabled={!manualCity || loading}
+                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+                >
+                  Get Weather
+                </button>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* 7-Day Forecast */}
+        {/* Loading */}
+        {loading && !weather && (
+          <div className="bg-card border border-border rounded-lg p-12 mb-8 flex items-center justify-center">
+            <Loader2 className="animate-spin text-primary mr-3" size={24} />
+            <span className="text-muted-foreground">Fetching live weather...</span>
+          </div>
+        )}
+
+        {/* Current Weather */}
+        {weather && (
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-border rounded-lg p-8 mb-8">
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="flex flex-col justify-center">
+                <div className="text-6xl font-bold text-foreground mb-2">{weather.temperature}°C</div>
+                <div className="text-2xl text-muted-foreground mb-4 capitalize">{weather.weather_condition}</div>
+                <div className="text-sm text-muted-foreground">Live data for {weather.city}</div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="text-sm text-muted-foreground mb-1">Humidity</div>
+                  <div className="text-3xl font-bold text-foreground">{weather.humidity}%</div>
+                </div>
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="text-sm text-muted-foreground mb-1">Rain Chance</div>
+                  <div className="text-3xl font-bold text-foreground">{weather.rain_chance}%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 7-Day Forecast (placeholder until backend adds forecast endpoint) */}
         <div>
-          <h2 className="text-2xl font-bold text-foreground mb-6">7-Day Forecast</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-foreground">7-Day Forecast</h2>
+            <span className="text-xs px-3 py-1 rounded-full bg-secondary text-muted-foreground">
+              Coming soon — backend forecast endpoint not built yet
+            </span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {forecast.map((day, idx) => (
-              <div key={idx} className="bg-card border border-border rounded-lg p-6">
+              <div key={idx} className="bg-card border border-border rounded-lg p-6 opacity-60">
                 <div className="text-lg font-bold text-foreground mb-4">{day.day}</div>
                 <div className="text-4xl mb-4">{day.icon}</div>
-                <div className="mb-4">
-                  <p className="text-sm text-muted-foreground mb-2">{day.condition}</p>
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-foreground">{day.high}°C</span>
-                    <span className="text-muted-foreground">{day.low}°C</span>
-                  </div>
-                </div>
-                <div className="pt-4 border-t border-border">
-                  <div className="flex items-center gap-2">
-                    <CloudRain size={16} className="text-blue-500" />
-                    <span className="text-sm text-muted-foreground">Rain: {day.rain}</span>
-                  </div>
-                </div>
+                <p className="text-sm text-muted-foreground">{day.condition}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Weather Alerts */}
+        {/* Tips */}
         <div className="mt-8 bg-accent/10 border border-accent/20 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-foreground mb-4">Irrigation Planning Tips</h3>
+          <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            <CloudRain size={18} />
+            Irrigation Planning Tip
+          </h3>
           <div className="space-y-2 text-muted-foreground text-sm">
-            <p>• 80% rain probability on Thursday. Consider delaying irrigation until after rain.</p>
-            <p>• Low rain chance today and tomorrow. Irrigation is recommended if soil moisture is below 50%.</p>
-            <p>• Use this weather forecast to optimize your irrigation schedule and save water.</p>
+            {weather ? (
+              <p>
+                Current rain chance is {weather.rain_chance}%.{' '}
+                {weather.rain_chance > 50
+                  ? 'Consider delaying irrigation — rain is likely.'
+                  : 'Low rain chance — irrigate if soil moisture is below 50%.'}
+              </p>
+            ) : (
+              <p>Fetch live weather above to see a personalized irrigation tip.</p>
+            )}
           </div>
         </div>
       </div>

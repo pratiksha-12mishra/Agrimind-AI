@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Cloud, Droplets, AlertCircle, Loader2 } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 
-export default function Predict() {
+export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string) => void }) {
   const [formData, setFormData] = useState({
     crop: 'wheat',
     growth_stage: 'vegetative',
@@ -57,7 +57,7 @@ export default function Predict() {
       // Fetch weather first
       console.log('[v0] Starting form submission...')
       const weatherResult = await apiClient.getWeather(formData.city)
-      
+
       if (weatherResult.error) {
         console.log('[v0] Weather error:', weatherResult.error)
         setError(`Weather service unavailable: ${weatherResult.error}`)
@@ -102,12 +102,13 @@ export default function Predict() {
 
       // Store result in sessionStorage for results page
       sessionStorage.setItem('irrigationResult', JSON.stringify(recResult.data))
+      sessionStorage.setItem('soilMoistureInput', String(formData.soil_moisture))
       sessionStorage.setItem('weatherData', JSON.stringify(weatherResult.data))
       setSuccess(true)
 
-      // Redirect to results page after 1 second
+      // Switch to results tab after 1 second (no page reload — keeps login/session state intact)
       setTimeout(() => {
-        window.location.href = '/?tab=results'
+        setCurrentTab('results')
       }, 1000)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred'
@@ -220,7 +221,13 @@ export default function Predict() {
                 {error && (
                   <div className="bg-destructive/10 border border-destructive rounded-lg p-3 flex gap-3">
                     <AlertCircle className="text-destructive flex-shrink-0" size={20} />
-                    <p className="text-sm text-destructive">{error}</p>
+                    <div className="text-sm text-destructive">
+                      <p className="font-semibold">Request failed</p>
+                      <p className="mt-1 break-words">{error}</p>
+                      <p className="mt-2 text-xs opacity-75">
+                        Open browser DevTools → Console tab for full [v0] logs of the exact request/response.
+                      </p>
+                    </div>
                   </div>
                 )}
 

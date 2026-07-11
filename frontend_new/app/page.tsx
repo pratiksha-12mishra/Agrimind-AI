@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Navbar from '@/components/navbar'
 import Home from '@/components/pages/home'
 import Login from '@/components/pages/login'
@@ -19,6 +19,17 @@ export default function Page() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
 
+  // Load saved theme preference once, on first mount
+  useEffect(() => {
+    const saved = localStorage.getItem('agrimind-theme')
+    if (saved === 'dark') setIsDarkMode(true)
+  }, [])
+
+  // Save theme preference whenever it changes
+  useEffect(() => {
+    localStorage.setItem('agrimind-theme', isDarkMode ? 'dark' : 'light')
+  }, [isDarkMode])
+
   const renderPage = () => {
     switch (currentTab) {
       case 'home':
@@ -26,7 +37,11 @@ export default function Page() {
       case 'login':
         return <Login setIsLoggedIn={setIsLoggedIn} setCurrentTab={setCurrentTab} />
       case 'predict':
-        return isLoggedIn ? <Predict /> : <Login setIsLoggedIn={setIsLoggedIn} setCurrentTab={setCurrentTab} />
+        return isLoggedIn ? (
+          <Predict setCurrentTab={setCurrentTab} />
+        ) : (
+          <Login setIsLoggedIn={setIsLoggedIn} setCurrentTab={setCurrentTab} />
+        )
       case 'results':
         return isLoggedIn ? <Results /> : <Login setIsLoggedIn={setIsLoggedIn} setCurrentTab={setCurrentTab} />
       case 'dashboard':

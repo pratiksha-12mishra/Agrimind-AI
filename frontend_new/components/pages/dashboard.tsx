@@ -1,12 +1,51 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Droplets, Cloud, Thermometer, AlertCircle } from 'lucide-react'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts'
 
 interface DashboardProps {
   isLoggedIn: boolean
 }
 
 export default function Dashboard({ isLoggedIn }: DashboardProps) {
+  // Simulated live soil moisture trend — replace with real WebSocket data once backend provides it
+  const [trendData, setTrendData] = useState<{ time: string; moisture: number }[]>([])
+
+  useEffect(() => {
+    if (!isLoggedIn) return
+
+    const seed = Array.from({ length: 8 }).map((_, i) => ({
+      time: `-${(8 - i) * 3}m`,
+      moisture: 40 + Math.round(Math.sin(i) * 8 + Math.random() * 4),
+    }))
+    setTrendData(seed)
+
+    const interval = setInterval(() => {
+      setTrendData((prev) => {
+        const next = [...prev.slice(1)]
+        const last = prev[prev.length - 1]?.moisture ?? 45
+        const newMoisture = Math.max(15, Math.min(85, last + (Math.random() * 10 - 5)))
+        next.push({ time: 'now', moisture: Math.round(newMoisture) })
+        return next
+      })
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [isLoggedIn])
+
   if (!isLoggedIn) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -16,6 +55,16 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
       </div>
     )
   }
+
+  const latestMoisture = trendData.length ? trendData[trendData.length - 1].moisture : 45
+
+  // Pie chart: today's soil status breakdown (demo distribution)
+  const statusPieData = [
+    { name: 'Optimal', value: 55 },
+    { name: 'Dry', value: 25 },
+    { name: 'Saturated', value: 20 },
+  ]
+  const STATUS_COLORS = ['var(--color-primary)', 'var(--color-destructive)', 'var(--color-accent)']
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
@@ -32,14 +81,16 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Soil Moisture</p>
-                <p className="text-3xl font-bold text-foreground">45%</p>
-                <p className="text-xs text-muted-foreground mt-1">Moderate</p>
+                <p className="text-3xl font-bold text-foreground">{latestMoisture}%</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {latestMoisture < 30 ? 'Dry' : latestMoisture <= 70 ? 'Optimal' : 'Saturated'}
+                </p>
               </div>
               <div className="p-3 rounded-lg bg-primary/10">
                 <Droplets className="text-primary" size={24} />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground bg-secondary p-2 rounded">Demo sensor data</p>
+            <p className="text-xs text-muted-foreground bg-secondary p-2 rounded">Simulated live data</p>
           </div>
 
           <div className="bg-card border border-border rounded-lg p-6">
@@ -82,6 +133,52 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
               </div>
             </div>
             <p className="text-xs text-muted-foreground bg-secondary p-2 rounded">Live API data</p>
+          </div>
+        </div>
+
+        {/* Live Trend + Pie Chart */}
+        <div className="grid lg:grid-cols-3 gap-8 mb-8">
+          <div className="lg:col-span-2 bg-card border border-border rounded-lg p-8">
+            <h3 className="text-xl font-bold text-foreground mb-1">Soil Moisture Trend</h3>
+            <p className="text-xs text-muted-foreground mb-6">
+              Simulated live feed, updates every 3 seconds — swap for real ESP32/WebSocket data once available
+            </p>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-muted)" />
+                  <XAxis dataKey="time" stroke="var(--color-muted-foreground)" fontSize={12} />
+                  <YAxis domain={[0, 100]} stroke="var(--color-muted-foreground)" fontSize={12} />
+                  <Tooltip formatter={(value: number) => `${value}%`} />
+                  <Line
+                    type="monotone"
+                    dataKey="moisture"
+                    stroke="var(--color-primary)"
+                    strokeWidth={2}
+                    dot={false}
+                    isAnimationActive={true}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-lg p-8">
+            <h3 className="text-xl font-bold text-foreground mb-1">Today's Soil Status</h3>
+            <p className="text-xs text-muted-foreground mb-6">Demo distribution</p>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={statusPieData} dataKey="value" nameKey="name" innerRadius={45} outerRadius={75} paddingAngle={3}>
+                    {statusPieData.map((entry, index) => (
+                      <Cell key={entry.name} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => `${value}%`} />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
