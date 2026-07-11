@@ -3,7 +3,32 @@ from typing import Optional
 from datetime import datetime
 from typing import Optional
 from sqlmodel import SQLModel, Field
+from datetime import datetime
+from typing import Optional
+from datetime import datetime
+from typing import Optional
 
+class MotorLog(SQLModel, table=True):
+    __tablename__ = "motor_log"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    farm_id: int
+    action: str          # "start" or "stop"
+    status: str          # "sent", "success", "failed"
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+class Notification(SQLModel, table=True):
+    __tablename__ = "notification"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    title: str
+    message: str
+
+    is_read: bool = False
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class RecommendationHistory(SQLModel, table=True):
     __tablename__ = "recommendation_history"
