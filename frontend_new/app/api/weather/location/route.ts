@@ -13,8 +13,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'latitude and longitude are required' }, { status: 400 })
     }
 
-    console.log('[v0] Weather Location API - Fetching for:', latitude, longitude)
-
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
 
@@ -28,7 +26,6 @@ export async function GET(request: NextRequest) {
     )
 
     clearTimeout(timeoutId)
-    console.log('[v0] Weather Location API - Response status:', response.status)
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -43,8 +40,6 @@ export async function GET(request: NextRequest) {
     }
 
     const raw = await response.json()
-    console.log('[v0] Weather Location API - Raw response:', JSON.stringify(raw))
-
     const mapped = {
       city: raw.city,
       temperature: raw.temperature,
@@ -55,7 +50,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(mapped)
   } catch (error: any) {
-    console.error('[v0] Weather Location API - Error:', error)
     if (error.name === 'AbortError') {
       return NextResponse.json({ error: 'Request timeout: Backend took too long to respond.' }, { status: 504 })
     }
