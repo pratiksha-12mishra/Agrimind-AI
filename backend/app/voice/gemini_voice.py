@@ -6,23 +6,25 @@ Supported languages: Hindi (hi), Marathi (mr), Bengali (bn),
                      Tamil (ta), Gujarati (gu), English (en)
 """
 
-from google import genai
-from google.genai import types
+# from google import genai
+# from google.genai import types
 import os
 from dotenv import load_dotenv
+from groq import Groq
+
 
 # ---- Auto-load .env file ----
 load_dotenv()
 
-# ---- Configure Gemini once at import time ----
-_GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not _GEMINI_API_KEY:
-    raise ValueError(
-        "GEMINI_API_KEY not found. "
-        "Make sure it is set in your .env file."
-    )
-
-_CLIENT = genai.Client(api_key=_GEMINI_API_KEY)
+# # ---- Configure Gemini once at import time ----
+# _GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# if not _GEMINI_API_KEY:
+#     raise ValueError(
+#         "GEMINI_API_KEY not found. "
+#         "Make sure it is set in your .env file."
+#     )
+_CLIENT = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# _CLIENT = genai.Client(api_key=_GEMINI_API_KEY)
 
 # ---- Language name mapping ----
 SUPPORTED_LANGUAGES = {
@@ -81,11 +83,14 @@ Your rules:
 Farmer's question: {query}"""
 
     try:
-        response = _CLIENT.models.generate_content(
-            model="models/gemini-2.0-flash-lite",
-            contents=prompt,
+        response = _CLIENT.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=200,
         )
-        response_text = response.text.strip()
+        response_text = response.choices[0].message.content.strip()
 
         return {
             "response": response_text,
