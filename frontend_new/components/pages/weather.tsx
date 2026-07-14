@@ -1,20 +1,53 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Cloud, CloudRain, Loader2, MapPin, AlertCircle } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Cloud, CloudRain, Sun, CloudSnow, MapPin, AlertCircle } from 'lucide-react'
 import { apiClient, WeatherData } from '@/lib/api'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface WeatherProps {
   isLoggedIn: boolean
 }
 
+interface ForecastDay {
+  date: string
+  temperature: number
+  humidity: number
+  rain_probability: number
+  weather: string
+}
+
+function getWeatherIcon(condition: string) {
+  const c = condition.toLowerCase()
+  if (c.includes('rain') || c.includes('drizzle')) return CloudRain
+  if (c.includes('snow')) return CloudSnow
+  if (c.includes('clear') || c.includes('sun')) return Sun
+  return Cloud
+}
+
 export default function Weather({ isLoggedIn }: WeatherProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null)
-  const [detectedCity, setDetectedCity] = useState<string | null>(null)
+  const [forecast, setForecast] = useState<ForecastDay[]>([])
+  const [forecastError, setForecastError] = useState<string | null>(null)
   const [manualCity, setManualCity] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const fetchForecast = async (city: string) => {
+    setForecastError(null)
+    try {
+      const res = await fetch(`/api/weather/forecast?city=${encodeURIComponent(city)}`)
+      const data = await res.json()
+      if (!res.ok) {
+        setForecastError(data.error || 'Forecast unavailable')
+        setForecast([])
+        return
+      }
+      setForecast(Array.isArray(data) ? data : [])
+    } catch (err: any) {
+      setForecastError(err?.message || 'Failed to load forecast')
+    }
+  }
 
   const fetchWeatherForCity = async (city: string) => {
     setLoading(true)
@@ -23,13 +56,15 @@ export default function Weather({ isLoggedIn }: WeatherProps) {
     if (result.error || !result.data) {
       setError(result.error || 'Unable to fetch weather for this location')
       setWeather(null)
-    } else {
-      setWeather(result.data)
+      setLoading(false)
+      return
     }
+    setWeather(result.data)
     setLoading(false)
+    fetchForecast(result.data.city)
   }
 
- const detectLocationAndFetch = () => {
+  const detectLocationAndFetch = () => {
     setError(null)
     setLoading(true)
 
@@ -43,36 +78,20 @@ export default function Weather({ isLoggedIn }: WeatherProps) {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords
-          const geoRes = await fetch(`/api/geocode?lat=${latitude}&lon=${longitude}`)
-          const geoData = await geoRes.json()
+          const res = await fetch(`/api/weather/location?latitude=${latitude}&longitude=${longitude}`)
+          const data = await res.json()
 
-          if (!geoRes.ok || !geoData.candidates || geoData.candidates.length === 0) {
-            setError('Could not determine your city from your location. Enter a city manually below.')
+          if (!res.ok) {
+            setError(data.error || 'Could not fetch weather for your location. Enter a city manually below.')
             setLoading(false)
             return
           }
 
-          // Try each candidate place name until the weather API accepts one
-          let succeeded = false
-          for (const candidate of geoData.candidates as string[]) {
-            const result = await apiClient.getWeather(candidate)
-            if (!result.error && result.data) {
-              setDetectedCity(candidate)
-              setWeather(result.data)
-              succeeded = true
-              break
-            }
-          }
-
-          if (!succeeded) {
-            setDetectedCity(geoData.city)
-            setError(
-              `Detected "${geoData.city}" but it isn't recognized by the weather service. Enter a nearby city manually below.`
-            )
-          }
+          setWeather(data)
+          setLoading(false)
+          fetchForecast(data.city)
         } catch (err: any) {
           setError('Location lookup failed. Enter a city manually below.')
-        } finally {
           setLoading(false)
         }
       },
@@ -80,9 +99,6 @@ export default function Weather({ isLoggedIn }: WeatherProps) {
         setError('Location permission denied. Enter a city manually below.')
         setLoading(false)
       }
-    
-  
-     
     )
   }
 
@@ -103,14 +119,6 @@ export default function Weather({ isLoggedIn }: WeatherProps) {
     )
   }
 
-  // Placeholder forecast — backend has no 7-day forecast endpoint yet
-  const forecast = [
-    { day: 'Today', condition: 'See current weather above', icon: '☀️' },
-    { day: 'Tomorrow', condition: 'Forecast coming soon', icon: '⛅' },
-    { day: 'Day 3', condition: 'Forecast coming soon', icon: '⛅' },
-    { day: 'Day 4', condition: 'Forecast coming soon', icon: '⛅' },
-  ]
-
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -120,7 +128,7 @@ export default function Weather({ isLoggedIn }: WeatherProps) {
             <h1 className="text-4xl font-bold text-foreground mb-2">Live Weather Forecast</h1>
             <p className="text-muted-foreground flex items-center gap-2">
               <MapPin size={16} />
-              {weather?.city || detectedCity || 'Detecting your location...'}
+              {weather?.city || 'Detecting your location...'}
             </p>
           </div>
           <button
@@ -137,13 +145,7 @@ export default function Weather({ isLoggedIn }: WeatherProps) {
           <div className="mb-6 bg-destructive/10 border border-destructive rounded-lg p-4 flex gap-3 items-start flex-wrap">
             <AlertCircle className="text-destructive flex-shrink-0" size={20} />
             <div className="flex-1 min-w-[200px]">
-              <p className="text-sm text-destructive font-semibold">
-                {error.toLowerCase().includes('permission')
-                  ? 'Location access denied — enter your city manually below'
-                  : error.toLowerCase().includes('timeout')
-                  ? 'Weather service is waking up — please retry in a few seconds'
-                  : 'Could not detect your location automatically — enter your city manually below'}
-              </p>
+              <p className="text-sm text-destructive font-semibold">{error}</p>
               <div className="flex gap-2 mt-3">
                 <input
                   type="text"
@@ -164,7 +166,7 @@ export default function Weather({ isLoggedIn }: WeatherProps) {
           </div>
         )}
 
-       {/* Loading */}
+        {/* Loading */}
         {loading && !weather && (
           <div className="mb-8">
             <Skeleton className="h-48 w-full rounded-lg" />
@@ -195,23 +197,48 @@ export default function Weather({ isLoggedIn }: WeatherProps) {
           </div>
         )}
 
-        {/* 7-Day Forecast (placeholder until backend adds forecast endpoint) */}
+        {/* Real Forecast */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-foreground">7-Day Forecast</h2>
-            <span className="text-xs px-3 py-1 rounded-full bg-secondary text-muted-foreground">
-              Coming soon — backend forecast endpoint not built yet
-            </span>
+            <h2 className="text-2xl font-bold text-foreground">Forecast</h2>
+            {forecastError && (
+              <span className="text-xs px-3 py-1 rounded-full bg-secondary text-muted-foreground">
+                {forecastError}
+              </span>
+            )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {forecast.map((day, idx) => (
-              <div key={idx} className="bg-card border border-border rounded-lg p-6 opacity-60">
-                <div className="text-lg font-bold text-foreground mb-4">{day.day}</div>
-                <div className="text-4xl mb-4">{day.icon}</div>
-                <p className="text-sm text-muted-foreground">{day.condition}</p>
-              </div>
-            ))}
-          </div>
+
+          {forecast.length === 0 && !forecastError && weather && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-40 w-full rounded-lg" />
+              ))}
+            </div>
+          )}
+
+          {forecast.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {forecast.map((day, idx) => {
+                const Icon = getWeatherIcon(day.weather)
+                const label =
+                  idx === 0
+                    ? 'Today'
+                    : new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })
+                return (
+                  <div key={day.date} className="bg-card border border-border rounded-lg p-6 text-center">
+                    <div className="text-lg font-bold text-foreground mb-3">{label}</div>
+                    <Icon className="mx-auto text-primary mb-3" size={36} />
+                    <p className="text-2xl font-bold text-foreground mb-1">{day.temperature}°C</p>
+                    <p className="text-sm text-muted-foreground capitalize mb-2">{day.weather}</p>
+                    <div className="flex justify-between text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
+                      <span>💧 {day.humidity}%</span>
+                      <span>🌧️ {day.rain_probability}%</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Tips */}
