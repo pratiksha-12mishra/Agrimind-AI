@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
 
     console.log('[v0] Weather API - Fetching for city:', city)
 
-    // Call backend with timeout
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
 
@@ -45,9 +44,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: errorMessage }, { status: response.status })
     }
 
-    const data = await response.json()
-    console.log('[v0] Weather API - Success response:', JSON.stringify(data))
-    return NextResponse.json(data)
+    const raw = await response.json()
+    console.log('[v0] Weather API - Raw backend response:', JSON.stringify(raw))
+
+    // Backend uses different field names than the frontend expects — map them here
+    const mapped = {
+      city: raw.city,
+      temperature: raw.temperature,
+      humidity: raw.humidity,
+      weather_condition: raw.weather ?? raw.weather_condition ?? '',
+      rain_chance: raw.rain_probability ?? raw.rain_chance ?? 0,
+    }
+
+    console.log('[v0] Weather API - Mapped response:', JSON.stringify(mapped))
+    return NextResponse.json(mapped)
   } catch (error: any) {
     console.error('[v0] Weather API - Error:', error)
 

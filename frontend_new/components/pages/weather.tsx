@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Cloud, CloudRain, Loader2, MapPin, AlertCircle } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 import { apiClient, WeatherData } from '@/lib/api'
 
 interface WeatherProps {
@@ -136,7 +137,13 @@ export default function Weather({ isLoggedIn }: WeatherProps) {
           <div className="mb-6 bg-destructive/10 border border-destructive rounded-lg p-4 flex gap-3 items-start flex-wrap">
             <AlertCircle className="text-destructive flex-shrink-0" size={20} />
             <div className="flex-1 min-w-[200px]">
-              <p className="text-sm text-destructive font-semibold">{error}</p>
+              <p className="text-sm text-destructive font-semibold">
+                {error.toLowerCase().includes('permission')
+                  ? 'Location access denied — enter your city manually below'
+                  : error.toLowerCase().includes('timeout')
+                  ? 'Weather service is waking up — please retry in a few seconds'
+                  : 'Could not detect your location automatically — enter your city manually below'}
+              </p>
               <div className="flex gap-2 mt-3">
                 <input
                   type="text"
@@ -157,11 +164,10 @@ export default function Weather({ isLoggedIn }: WeatherProps) {
           </div>
         )}
 
-        {/* Loading */}
+       {/* Loading */}
         {loading && !weather && (
-          <div className="bg-card border border-border rounded-lg p-12 mb-8 flex items-center justify-center">
-            <Loader2 className="animate-spin text-primary mr-3" size={24} />
-            <span className="text-muted-foreground">Fetching live weather...</span>
+          <div className="mb-8">
+            <Skeleton className="h-48 w-full rounded-lg" />
           </div>
         )}
 
