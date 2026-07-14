@@ -3,8 +3,11 @@
 import { useState } from 'react'
 import { Cloud, Droplets, AlertCircle, Loader2 } from 'lucide-react'
 import { apiClient } from '@/lib/api'
+import { useLanguage } from '@/lib/language-context'
 
 export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string) => void }) {
+  const { t } = useLanguage()
+
   const [formData, setFormData] = useState({
     crop: 'wheat',
     growth_stage: 'vegetative',
@@ -54,7 +57,6 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
     setLoading(true)
 
     try {
-      // Fetch weather first
       console.log('[v0] Starting form submission...')
       const weatherResult = await apiClient.getWeather(formData.city)
 
@@ -75,7 +77,6 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
       console.log('[v0] Weather data received successfully')
       setWeather(weatherResult.data)
 
-      // Get recommendation
       console.log('[v0] Requesting recommendation...')
       const recResult = await apiClient.getRecommendation({
         crop: formData.crop,
@@ -100,13 +101,11 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
 
       console.log('[v0] Recommendation received successfully')
 
-      // Store result in sessionStorage for results page
       sessionStorage.setItem('irrigationResult', JSON.stringify(recResult.data))
-      sessionStorage.setItem('soilMoistureInput', String(formData.soil_moisture))
       sessionStorage.setItem('weatherData', JSON.stringify(weatherResult.data))
+      sessionStorage.setItem('soilMoistureInput', String(formData.soil_moisture))
       setSuccess(true)
 
-      // Switch to results tab after 1 second (no page reload — keeps login/session state intact)
       setTimeout(() => {
         setCurrentTab('results')
       }, 1000)
@@ -131,18 +130,18 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Irrigation Recommendation</h1>
-        <p className="text-muted-foreground mb-12">Get AI-powered irrigation decisions based on your field conditions and live weather</p>
+        <h1 className="text-4xl font-bold text-foreground mb-2">{t('predict_title')}</h1>
+        <p className="text-muted-foreground mb-12">{t('predict_subtitle')}</p>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Form */}
           <div className="lg:col-span-1">
             <div className="bg-card rounded-lg p-8 border border-border sticky top-24">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Field Information</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-6">{t('predict_field_info')}</h2>
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Crop Type
+                    {t('predict_crop_type')}
                   </label>
                   <select
                     name="crop"
@@ -160,7 +159,7 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Growth Stage
+                    {t('predict_growth_stage')}
                   </label>
                   <select
                     name="growth_stage"
@@ -179,7 +178,7 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-medium text-foreground">
-                      <Droplets className="inline mr-2" size={16} /> Soil Moisture
+                      <Droplets className="inline mr-2" size={16} /> {t('predict_soil_moisture')}
                     </label>
                     <span className={`text-sm font-semibold ${moistureStatus.color}`}>
                       {formData.soil_moisture}% - {moistureStatus.label}
@@ -206,14 +205,14 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    <Cloud className="inline mr-2" size={16} /> City
+                    <Cloud className="inline mr-2" size={16} /> {t('predict_city')}
                   </label>
                   <input
                     type="text"
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    placeholder="e.g. Bhopal, Jabalpur, Mumbai"
+                    placeholder={t('predict_city_placeholder')}
                     className="w-full px-4 py-2 rounded-lg border border-border bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -222,11 +221,17 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
                   <div className="bg-destructive/10 border border-destructive rounded-lg p-3 flex gap-3">
                     <AlertCircle className="text-destructive flex-shrink-0" size={20} />
                     <div className="text-sm text-destructive">
-                      <p className="font-semibold">Request failed</p>
-                      <p className="mt-1 break-words">{error}</p>
-                      <p className="mt-2 text-xs opacity-75">
-                        Open browser DevTools → Console tab for full [v0] logs of the exact request/response.
+                      <p className="font-semibold">
+                        {error.toLowerCase().includes('timeout') || error.toLowerCase().includes('took too long')
+                          ? 'Service is waking up — please try again in a few seconds'
+                          : error.toLowerCase().includes('city') || error.toLowerCase().includes('weather')
+                          ? 'Weather service unavailable for this location — check the city name'
+                          : 'Unable to get a recommendation right now'}
                       </p>
+                      <details className="mt-1">
+                        <summary className="cursor-pointer text-xs opacity-75">Technical details</summary>
+                        <p className="mt-1 break-words text-xs">{error}</p>
+                      </details>
                     </div>
                   </div>
                 )}
@@ -245,10 +250,10 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
                   {loading ? (
                     <>
                       <Loader2 size={18} className="animate-spin" />
-                      Analyzing...
+                      {t('predict_analyzing')}
                     </>
                   ) : (
-                    'Get AI Irrigation Recommendation'
+                    t('predict_submit')
                   )}
                 </button>
               </form>
@@ -258,7 +263,7 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
           {/* Info Section */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-card rounded-lg p-8 border border-border">
-              <h3 className="text-xl font-bold text-foreground mb-4">How It Works</h3>
+              <h3 className="text-xl font-bold text-foreground mb-4">{t('predict_how_title')}</h3>
               <ul className="space-y-4 text-muted-foreground">
                 <li className="flex gap-3">
                   <span className="font-bold text-primary flex-shrink-0">1.</span>

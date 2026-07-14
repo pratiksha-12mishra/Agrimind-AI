@@ -1,13 +1,46 @@
 'use client'
 
-import { AlertCircle, CheckCircle, Info, AlertTriangle, Trash2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { AlertCircle, CheckCircle, Info, AlertTriangle, Trash2, Bell } from 'lucide-react'
 
 interface NotificationsProps {
   isLoggedIn: boolean
 }
 
+interface RealNotification {
+  id: string | number
+  title: string
+  message: string
+  timestamp?: string
+}
+
 export default function Notifications({ isLoggedIn }: NotificationsProps) {
-  const alerts = [
+  const [realNotifications, setRealNotifications] = useState<RealNotification[] | null>(null)
+  const [rawResponse, setRawResponse] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!isLoggedIn) return
+    fetch('/api/notifications')
+      .then((res) => res.json())
+      .then((data) => {
+        setRawResponse(data)
+        const list = Array.isArray(data) ? data : data.notifications ?? data.items ?? []
+        setRealNotifications(
+          list.map((n: any, idx: number) => ({
+            id: n.id ?? idx,
+            title: n.title ?? 'Notification',
+            message: n.message ?? '',
+            timestamp: n.timestamp ?? n.created_at ?? undefined,
+          }))
+        )
+      })
+      .catch((err) => setRawResponse({ error: err?.message || 'Failed to fetch' }))
+      .finally(() => setLoading(false))
+  }, [isLoggedIn])
+
+  // Example/demo cards — clearly labeled, shown only when there are no real notifications yet
+  const demoAlerts = [
     {
       id: 1,
       type: 'high',
@@ -28,15 +61,6 @@ export default function Notifications({ isLoggedIn }: NotificationsProps) {
     },
     {
       id: 3,
-      type: 'medium',
-      title: 'Irrigation Recommended',
-      message: 'Irrigation is recommended within 24 hours to maintain healthy crop growth.',
-      time: '6 hours ago',
-      icon: AlertTriangle,
-      color: 'yellow',
-    },
-    {
-      id: 4,
       type: 'low',
       title: 'Water-Saving Opportunity',
       message: 'Due to forecasted rain, you can save approximately 25% of scheduled water.',
@@ -45,40 +69,13 @@ export default function Notifications({ isLoggedIn }: NotificationsProps) {
       color: 'blue',
     },
     {
-      id: 5,
-      type: 'medium',
-      title: 'Optimal Weather Conditions',
-      message: 'Humidity and temperature levels are optimal for irrigation efficiency.',
-      time: '1 day ago',
-      icon: CheckCircle,
-      color: 'green',
-    },
-    {
-      id: 6,
+      id: 4,
       type: 'medium',
       title: 'AI Recommendation Ready',
       message: 'Your daily AI irrigation recommendation is ready. Check the results page.',
       time: '2 days ago',
       icon: CheckCircle,
       color: 'green',
-    },
-    {
-      id: 7,
-      type: 'low',
-      title: 'Smart Notifications Coming',
-      message: 'Smart irrigation notifications will be available after sensor setup is complete.',
-      time: '3 days ago',
-      icon: Info,
-      color: 'blue',
-    },
-    {
-      id: 8,
-      type: 'high',
-      title: 'No Irrigation Needed',
-      message: 'Soil moisture is adequate. Hold off on irrigation for now.',
-      time: '1 week ago',
-      icon: AlertCircle,
-      color: 'red',
     },
   ]
 
@@ -120,6 +117,18 @@ export default function Notifications({ isLoggedIn }: NotificationsProps) {
     }
   }
 
+  const timeAgo = (isoString: string) => {
+    const diffMs = Date.now() - new Date(isoString).getTime()
+    const minutes = Math.floor(diffMs / 60000)
+    if (minutes < 1) return 'Just now'
+    if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
+    const days = Math.floor(hours / 24)
+    return `${days} day${days === 1 ? '' : 's'} ago`
+  }
+  const hasRealData = realNotifications !== null && realNotifications.length > 0
+
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
@@ -129,45 +138,60 @@ export default function Notifications({ isLoggedIn }: NotificationsProps) {
           <p className="text-muted-foreground">Alerts about soil moisture, weather, and irrigation recommendations</p>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-card border border-border rounded-lg p-4 text-center">
-            <div className="text-3xl font-bold text-red-600 mb-1">{alerts.filter((a) => a.type === 'high').length}</div>
-            <p className="text-sm text-muted-foreground">Critical</p>
+        {/* Real notifications from backend */}
+        {!loading && hasRealData && (
+          <div className="space-y-4 mb-8">
+            <h2 className="text-lg font-bold text-foreground">Live Notifications</h2>
+            {realNotifications!.map((n) => (
+              <div key={n.id} className="border rounded-lg p-6 flex items-start gap-4 bg-primary/5 border-primary/20">
+                <Bell className="text-primary mt-1 flex-shrink-0" size={24} />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground mb-1">{n.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-2">{n.message}</p>
+                  {n.timestamp && (
+                    <p className="text-xs text-muted-foreground">{timeAgo(n.timestamp)}</p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="bg-card border border-border rounded-lg p-4 text-center">
-            <div className="text-3xl font-bold text-yellow-600 mb-1">{alerts.filter((a) => a.type === 'medium').length}</div>
-            <p className="text-sm text-muted-foreground">Warnings</p>
-          </div>
-          <div className="bg-card border border-border rounded-lg p-4 text-center">
-            <div className="text-3xl font-bold text-green-600 mb-1">{alerts.filter((a) => a.type === 'low' && a.icon === CheckCircle).length}</div>
-            <p className="text-sm text-muted-foreground">Success</p>
-          </div>
-          <div className="bg-card border border-border rounded-lg p-4 text-center">
-            <div className="text-3xl font-bold text-blue-600 mb-1">{alerts.length}</div>
-            <p className="text-sm text-muted-foreground">Total</p>
-          </div>
-        </div>
+        )}
 
-        {/* Alerts List */}
+        {/* Honest empty state when backend has no real notifications yet */}
+        {!loading && !hasRealData && (
+          <div className="bg-card border border-border rounded-lg p-8 mb-8 flex items-start gap-4">
+            <Bell className="text-muted-foreground flex-shrink-0" size={24} />
+            <div>
+              <h3 className="font-semibold text-foreground mb-1">No live notifications yet</h3>
+              <p className="text-sm text-muted-foreground">
+                Connected to the backend successfully — no alerts have been triggered yet. Automatic alerts (e.g. low
+                soil moisture) will appear here once that logic is enabled on the backend.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Demo examples — clearly labeled, always shown for reference/design preview */}
+        <div className="mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-foreground">Example Notifications</h2>
+          <span className="text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground">Demo preview</span>
+        </div>
         <div className="space-y-4">
-          {alerts.map((alert) => {
+          {demoAlerts.map((alert) => {
             const IconComponent = alert.icon
             return (
               <div
                 key={alert.id}
-                className={`border rounded-lg p-6 flex items-start gap-4 transition-all hover:shadow-md ${getTypeColor(alert.type)}`}
+                className={`border rounded-lg p-6 flex items-start gap-4 transition-all hover:shadow-md opacity-80 ${getTypeColor(alert.type)}`}
               >
                 <div className={`mt-1 flex-shrink-0 ${getIconColor(alert.color)}`}>
                   <IconComponent size={24} />
                 </div>
-
                 <div className="flex-1">
                   <h3 className="font-semibold text-foreground mb-1">{alert.title}</h3>
                   <p className="text-sm text-muted-foreground mb-2">{alert.message}</p>
                   <p className="text-xs text-muted-foreground">{alert.time}</p>
                 </div>
-
                 <button className="flex-shrink-0 p-2 text-muted-foreground hover:text-foreground transition-colors">
                   <Trash2 size={18} />
                 </button>
@@ -176,12 +200,15 @@ export default function Notifications({ isLoggedIn }: NotificationsProps) {
           })}
         </div>
 
-        {/* Clear All Button */}
-        <div className="mt-8 text-center">
-          <button className="px-6 py-2 text-muted-foreground hover:text-foreground transition-colors text-sm">
-            Clear all notifications
-          </button>
-        </div>
+        {/* Debug panel */}
+        <details className="mt-10 bg-card rounded-lg p-4 border border-border">
+          <summary className="cursor-pointer text-sm font-semibold text-muted-foreground">
+            Debug: raw backend response
+          </summary>
+          <pre className="mt-3 text-xs overflow-auto p-3 bg-secondary rounded-lg text-foreground max-h-96">
+            {JSON.stringify(rawResponse, null, 2)}
+          </pre>
+        </details>
       </div>
     </div>
   )

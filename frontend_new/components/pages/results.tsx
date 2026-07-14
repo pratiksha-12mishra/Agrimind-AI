@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { AlertCircle, Cloud, Droplets, Zap } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function Results() {
   const [result, setResult] = useState<any>(null)
@@ -29,14 +30,24 @@ export default function Results() {
     setLoading(false)
   }, [])
 
-  if (loading) {
+ if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin mb-4">
-            <Zap className="text-primary" size={32} />
+      <div className="min-h-screen bg-background">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <Skeleton className="h-10 w-96 mb-2" />
+          <Skeleton className="h-5 w-64 mb-12" />
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <Skeleton className="h-40 w-full rounded-lg" />
+              <Skeleton className="h-32 w-full rounded-lg" />
+              <Skeleton className="h-24 w-full rounded-lg" />
+              <Skeleton className="h-64 w-full rounded-lg" />
+            </div>
+            <div className="space-y-6">
+              <Skeleton className="h-52 w-full rounded-lg" />
+              <Skeleton className="h-40 w-full rounded-lg" />
+            </div>
           </div>
-          <p className="text-muted-foreground">Loading results...</p>
         </div>
       </div>
     )
