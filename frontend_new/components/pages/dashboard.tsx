@@ -24,6 +24,35 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
   // Simulated live soil moisture trend — replace with real WebSocket data once backend provides it
   const [trendData, setTrendData] = useState<{ time: string; moisture: number }[]>([])
 
+  const [motorStatus, setMotorStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [motorMessage, setMotorMessage] = useState('')
+  const [motorState, setMotorState] = useState<'off' | 'on'>('off')
+
+  const sendMotorCommand = async (action: 'start' | 'stop') => {
+    setMotorStatus('sending')
+    setMotorMessage('')
+    try {
+      const res = await fetch('/api/motor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setMotorStatus('error')
+        setMotorMessage(data.error || 'Failed to send command')
+        return
+      }
+
+      setMotorStatus('sent')
+      setMotorState(action === 'start' ? 'on' : 'off')
+      setMotorMessage(`MQTT command published to "${data.topic}" — no physical pump connected yet, this will control the real motor once ESP32 hardware is set up.`)
+    } catch (err: any) {
+      setMotorStatus('error')
+      setMotorMessage(err?.message || 'Network error sending motor command')
+    }
+  }
   useEffect(() => {
     if (!isLoggedIn) return
 
@@ -213,8 +242,8 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
             <h3 className="text-xl font-bold text-foreground mb-6">IoT Sensor Integration</h3>
             <div className="space-y-4">
               <div className="p-4 bg-secondary rounded-lg border border-border">
-                <p className="text-sm font-semibold text-foreground">Status</p>
-                <p className="text-muted-foreground mt-1">Sensor integration coming soon</p>
+                <p className="text-sm font-semibold text-foreground">⚫ Sensor Offline</p>
+                <p className="text-muted-foreground mt-1">Live IoT sensor integration coming soon</p>
               </div>
               <div className="p-4 bg-secondary rounded-lg border border-border">
                 <p className="text-sm font-semibold text-foreground">Live Data</p>
@@ -229,21 +258,49 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
 
           {/* Motor Control */}
           <div className="bg-card border border-border rounded-lg p-8">
-            <h3 className="text-xl font-bold text-foreground mb-6">Motor & Pump Control</h3>
-            <div className="space-y-4">
-              <div className="p-4 bg-secondary rounded-lg border border-border">
-                <p className="text-sm font-semibold text-foreground">Status</p>
-                <p className="text-muted-foreground mt-1">Motor automation is planned for the next phase</p>
-              </div>
-              <div className="p-4 bg-secondary rounded-lg border border-border">
-                <p className="text-sm font-semibold text-foreground">Setup Required</p>
-                <p className="text-muted-foreground mt-1">Connect an IoT relay and water pump to enable automatic irrigation scheduling</p>
-              </div>
-              <div className="p-4 bg-secondary rounded-lg border border-border">
-                <p className="text-sm font-semibold text-foreground">Future Feature</p>
-                <p className="text-muted-foreground mt-1">Auto-scheduling based on AI recommendations and weather alerts</p>
-              </div>
+            <h3 className="text-xl font-bold text-foreground mb-1">Motor & Pump Control</h3>
+            <p className="text-xs text-muted-foreground mb-6">
+              Sends real MQTT commands to your backend — physical pump response requires ESP32 hardware setup
+            </p>
+
+            <div className="flex items-center justify-between mb-6 p-4 bg-secondary rounded-lg border border-border">
+              <span className="text-sm font-semibold text-foreground">Motor Status</span>
+              <span
+                className={`text-sm font-bold px-3 py-1 rounded-full ${
+                  motorState === 'on' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                {motorState === 'on' ? '🟢 ON' : '⚫ OFF'}
+              </span>
             </div>
+
+            <div className="flex gap-4 mb-4">
+              <button
+                onClick={() => sendMotorCommand('start')}
+                disabled={motorStatus === 'sending'}
+                className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 disabled:opacity-50"
+              >
+                {motorStatus === 'sending' ? 'Sending...' : 'Start Motor'}
+              </button>
+              <button
+                onClick={() => sendMotorCommand('stop')}
+                disabled={motorStatus === 'sending'}
+                className="flex-1 py-3 rounded-lg bg-destructive text-destructive-foreground font-semibold hover:opacity-90 disabled:opacity-50"
+              >
+                {motorStatus === 'sending' ? 'Sending...' : 'Stop Motor'}
+              </button>
+            </div>
+
+            {motorStatus === 'sent' && (
+              <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-sm text-primary">
+                ✓ {motorMessage}
+              </div>
+            )}
+            {motorStatus === 'error' && (
+              <div className="p-3 bg-destructive/10 border border-destructive rounded-lg text-sm text-destructive">
+                {motorMessage}
+              </div>
+            )}
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { LanguageProvider } from '@/lib/language-context'
 import Navbar from '@/components/navbar'
 import Home from '@/components/pages/home'
 import Login from '@/components/pages/login'
@@ -19,13 +20,11 @@ export default function Page() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
 
-  // Load saved theme preference once, on first mount
   useEffect(() => {
     const saved = localStorage.getItem('agrimind-theme')
     if (saved === 'dark') setIsDarkMode(true)
   }, [])
 
-  // Save theme preference whenever it changes
   useEffect(() => {
     localStorage.setItem('agrimind-theme', isDarkMode ? 'dark' : 'light')
   }, [isDarkMode])
@@ -64,13 +63,13 @@ export default function Page() {
   }
 
   return (
-    <div className={isDarkMode ? 'dark' : ''}>
-      <div className="min-h-screen bg-background text-foreground">
-        <Navbar currentTab={currentTab} setCurrentTab={setCurrentTab} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
-        <main className="pt-20">
-          {renderPage()}
-        </main>
+    <LanguageProvider>
+      <div className={isDarkMode ? 'dark' : ''}>
+        <div className="min-h-screen bg-background text-foreground">
+          <Navbar currentTab={currentTab} setCurrentTab={setCurrentTab} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
+          <main className="pt-20">{renderPage()}</main>
+        </div>
       </div>
-    </div>
+    </LanguageProvider>
   )
 }

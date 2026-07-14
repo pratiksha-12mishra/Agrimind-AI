@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import { Moon, Sun, Globe } from 'lucide-react'
+import { useLanguage } from '@/lib/language-context'
+import { languageNames, Language } from '@/lib/translations'
 
 interface SettingsProps {
   isLoggedIn: boolean
@@ -10,14 +11,13 @@ interface SettingsProps {
 }
 
 export default function Settings({ isLoggedIn, isDarkMode, setIsDarkMode }: SettingsProps) {
-  const [language, setLanguage] = useState('english')
+  const { language, setLanguage, t } = useLanguage()
 
-  const languages = [
-    { code: 'english', name: 'English', flag: '🇬🇧' },
-    { code: 'hindi', name: 'हिंदी', flag: '🇮🇳' },
-    { code: 'marathi', name: 'मराठी', flag: '🇮🇳' },
-    { code: 'tamil', name: 'தமிழ்', flag: '🇮🇳' },
-  ]
+  const languages = (Object.keys(languageNames) as Language[]).map((code) => ({
+    code,
+    name: languageNames[code].name,
+    flag: languageNames[code].flag,
+  }))
 
   if (!isLoggedIn) {
     return (
@@ -34,8 +34,8 @@ export default function Settings({ isLoggedIn, isDarkMode, setIsDarkMode }: Sett
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Settings</h1>
-          <p className="text-muted-foreground">Customize your AgriMind experience</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2">{t('settings_title')}</h1>
+          <p className="text-muted-foreground">{t('settings_subtitle')}</p>
         </div>
 
         {/* Theme Settings */}
@@ -48,7 +48,7 @@ export default function Settings({ isLoggedIn, isDarkMode, setIsDarkMode }: Sett
                 <Sun className="text-primary" size={24} />
               )}
               <div>
-                <h2 className="text-lg font-semibold text-foreground">Appearance</h2>
+                <h2 className="text-lg font-semibold text-foreground">{t('settings_appearance')}</h2>
                 <p className="text-sm text-muted-foreground">Choose your preferred theme</p>
               </div>
             </div>
@@ -66,7 +66,7 @@ export default function Settings({ isLoggedIn, isDarkMode, setIsDarkMode }: Sett
               <div className="flex items-center gap-3">
                 <Sun size={20} />
                 <div>
-                  <p className="font-medium text-foreground">Light Mode</p>
+                  <p className="font-medium text-foreground">{t('settings_light_mode')}</p>
                   <p className="text-xs text-muted-foreground">Bright and easy on the eyes</p>
                 </div>
               </div>
@@ -83,7 +83,7 @@ export default function Settings({ isLoggedIn, isDarkMode, setIsDarkMode }: Sett
               <div className="flex items-center gap-3">
                 <Moon size={20} />
                 <div>
-                  <p className="font-medium text-foreground">Dark Mode</p>
+                  <p className="font-medium text-foreground">{t('settings_dark_mode')}</p>
                   <p className="text-xs text-muted-foreground">Easy on the eyes at night</p>
                 </div>
               </div>
@@ -96,12 +96,12 @@ export default function Settings({ isLoggedIn, isDarkMode, setIsDarkMode }: Sett
           <div className="flex items-center gap-3 mb-6">
             <Globe className="text-primary" size={24} />
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Language</h2>
-              <p className="text-sm text-muted-foreground">Select your preferred language</p>
+              <h2 className="text-lg font-semibold text-foreground">{t('settings_language')}</h2>
+              <p className="text-sm text-muted-foreground">{t('settings_language_subtitle')}</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {languages.map((lang) => (
               <button
                 key={lang.code}

@@ -2,6 +2,7 @@
 
 import { LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
+import { useLanguage } from '@/lib/language-context'
 
 interface NavbarProps {
   currentTab: string
@@ -17,19 +18,20 @@ export default function Navbar({
   setIsLoggedIn,
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { t } = useLanguage()
 
   const tabs = [
-    { id: 'home', label: '🏠 Home' },
-    { id: 'login', label: '🔐 Login' },
-    { id: 'predict', label: '🤖 Predict' },
-    { id: 'results', label: '📊 Results' },
-    { id: 'dashboard', label: '📡 Dashboard' },
-    { id: 'weather', label: '🌤️ Weather' },
-    { id: 'voice', label: '🎤 Voice' },
-    { id: 'history', label: '🕐 History' },
-    { id: 'notifications', label: '🔔 Notifications' },
-    { id: 'settings', label: '⚙️ Settings' },
-    { id: 'contact', label: '📞 Contact Us' },
+    { id: 'home', label: t('nav_home') },
+    { id: 'login', label: t('nav_login') },
+    { id: 'predict', label: t('nav_predict') },
+    { id: 'results', label: t('nav_results') },
+    { id: 'dashboard', label: t('nav_dashboard') },
+    { id: 'weather', label: t('nav_weather') },
+    { id: 'voice', label: t('nav_voice') },
+    { id: 'history', label: t('nav_history') },
+    { id: 'notifications', label: t('nav_notifications') },
+    { id: 'settings', label: t('nav_settings') },
+    { id: 'contact', label: t('nav_contact') },
   ]
 
   const handleTabClick = (tabId: string) => {
@@ -47,13 +49,11 @@ export default function Navbar({
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="text-2xl font-bold text-primary">🌾</div>
             <span className="text-xl font-bold text-primary">AgriMind</span>
           </div>
 
-          {/* Desktop Menu */}
           <div className="hidden lg:flex items-center gap-1 overflow-x-auto max-w-2xl">
             {tabs.map((tab) => (
               <button
@@ -70,7 +70,6 @@ export default function Navbar({
             ))}
           </div>
 
-          {/* Logout and Mobile Menu */}
           <div className="flex items-center gap-4">
             {isLoggedIn && (
               <button
@@ -78,7 +77,7 @@ export default function Navbar({
                 className="hidden md:flex items-center gap-2 px-4 py-2 rounded-md bg-red-100 text-red-700 hover:bg-red-200 text-sm font-medium transition-colors"
               >
                 <LogOut size={16} />
-                Logout
+                {t('nav_logout')}
               </button>
             )}
             <button
@@ -90,7 +89,6 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="lg:hidden pb-4 space-y-2">
             {tabs.map((tab) => (
@@ -112,7 +110,7 @@ export default function Navbar({
                 className="w-full flex items-center gap-2 px-4 py-2 rounded-md bg-red-100 text-red-700 hover:bg-red-200 text-sm font-medium transition-colors"
               >
                 <LogOut size={16} />
-                Logout
+                {t('nav_logout')}
               </button>
             )}
           </div>
