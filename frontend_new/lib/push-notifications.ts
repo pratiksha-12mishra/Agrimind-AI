@@ -5,7 +5,10 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)))
 }
 
+// export async function subscribeToPush() {
+//   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
 export async function subscribeToPush() {
+  console.log('[v0] subscribeToPush() function entered')
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     console.log('[v0] Push notifications not supported in this browser')
     return

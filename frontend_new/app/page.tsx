@@ -26,15 +26,21 @@ export default function Page() {
     if (saved === 'dark') setIsDarkMode(true)
   }, [])
 
+  // useEffect(() => {
+  //   localStorage.setItem('agrimind-theme', isDarkMode ? 'dark' : 'light')
+  // }, [isDarkMode])
+  // useEffect(() => {
+  //   if (isLoggedIn) {
+  //     subscribeToPush()
+  //   }
+  // }, [isLoggedIn])
   useEffect(() => {
-    localStorage.setItem('agrimind-theme', isDarkMode ? 'dark' : 'light')
-  }, [isDarkMode])
-  useEffect(() => {
-    if (isLoggedIn) {
-      subscribeToPush()
-    }
-  }, [isLoggedIn])
-
+  console.log('[v0] page.tsx useEffect fired, isLoggedIn =', isLoggedIn)
+  if (isLoggedIn) {
+    console.log('[v0] Calling subscribeToPush() now...')
+    subscribeToPush()
+  }
+}, [isLoggedIn])
   const renderPage = () => {
     switch (currentTab) {
       case 'home':
