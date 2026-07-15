@@ -17,6 +17,9 @@ from app.db.database import get_session
 from app.db.models import RecommendationHistory
 from app.mqtt.client import connect
 from app.notifications.scheduler import start_scheduler
+from app.routes import auth
+
+
 
 
 
@@ -44,6 +47,7 @@ app.include_router(notifications.router)
 app.include_router(motor.router)
 app.include_router(voice.router)
 app.include_router(schedule.router)
+app.include_router(auth.router)
 
 class RecommendationRequest(BaseModel):
     crop: str = Field(
