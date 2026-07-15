@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { LanguageProvider } from '@/lib/language-context'
+import { subscribeToPush } from '@/lib/push-notifications'
 import Navbar from '@/components/navbar'
 import Home from '@/components/pages/home'
 import Login from '@/components/pages/login'
@@ -28,6 +29,11 @@ export default function Page() {
   useEffect(() => {
     localStorage.setItem('agrimind-theme', isDarkMode ? 'dark' : 'light')
   }, [isDarkMode])
+  useEffect(() => {
+    if (isLoggedIn) {
+      subscribeToPush()
+    }
+  }, [isLoggedIn])
 
   const renderPage = () => {
     switch (currentTab) {
