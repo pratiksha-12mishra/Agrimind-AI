@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import RegisterSW from '@/components/register-sw'
 
 export const metadata: Metadata = {
   title: 'AgriMind AI - Smart Irrigation System',
@@ -44,7 +45,12 @@ export default function RootLayout({
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
+      {/* <body className="antialiased">
+        {children}
+        {process.env.NODE_ENV === 'production' && <Analytics />}
+      </body> */}
       <body className="antialiased">
+        <RegisterSW />
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
