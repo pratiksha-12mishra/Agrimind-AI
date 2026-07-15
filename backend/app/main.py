@@ -16,15 +16,18 @@ from sqlmodel import Session
 from app.db.database import get_session
 from app.db.models import RecommendationHistory
 from app.mqtt.client import connect
+from app.notifications.scheduler import start_scheduler
+
 
 
 app = FastAPI()
+
 
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
     connect()
-
+    start_scheduler()
 
 app.add_middleware(
     CORSMiddleware,
