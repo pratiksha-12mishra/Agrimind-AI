@@ -1,4 +1,3 @@
-import json
 import os
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -18,29 +17,32 @@ class MotorRequest(BaseModel):
     action: str
 
 
-# ------------------------------------------------------------------
-# Legacy endpoint (kept for backward compatibility)
-# ------------------------------------------------------------------
+# ---------------------------------------------------------
+# Legacy endpoint (kept for compatibility)
+# ---------------------------------------------------------
 @router.post("/motor/")
-def control_motor(
-    data: MotorRequest,
-):
-    message = {
-        "action": data.action.upper()
-    }
+def control_motor(data: MotorRequest):
 
-    publish(TOPIC, json.dumps(message))
+    action = data.action.lower()
+
+    if action not in ["start", "stop"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Action must be 'start' or 'stop'"
+        )
+
+    publish(TOPIC, action)
 
     return {
         "status": "published",
         "topic": TOPIC,
-        "message": message
+        "message": action
     }
 
 
-# ------------------------------------------------------------------
+# ---------------------------------------------------------
 # Roadmap endpoint
-# ------------------------------------------------------------------
+# ---------------------------------------------------------
 @router.post("/farms/{farm_id}/motor")
 def control_farm_motor(
     farm_id: int,
@@ -57,16 +59,19 @@ def control_farm_motor(
             detail="Farm not found"
         )
 
-    message = {
-        "farm_id": farm_id,
-        "action": data.action.upper()
-    }
+    action = data.action.lower()
 
-    publish(TOPIC, json.dumps(message))
+    if action not in ["start", "stop"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Action must be 'start' or 'stop'"
+        )
+
+    publish(TOPIC, action)
 
     log = MotorLog(
         farm_id=farm_id,
-        action=data.action.upper(),
+        action=action,
         status="sent"
     )
 
@@ -77,5 +82,5 @@ def control_farm_motor(
         "status": "published",
         "farm": farm.name,
         "topic": TOPIC,
-        "message": message
+        "message": action
     }

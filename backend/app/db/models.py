@@ -64,3 +64,31 @@ class Farm(SQLModel, table=True):
     soil_type: str
 
     irrigation_method: str
+
+class SensorReading(SQLModel, table=True):
+    __tablename__ = "sensor_reading"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    device_id: str
+    soil_moisture: float
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
+    motor_running: Optional[bool] = None
+
+    crop: Optional[str] = None
+    growth_stage: Optional[str] = None
+    city: Optional[str] = None
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class PushSubscription(SQLModel, table=True):
+    __tablename__ = "push_subscription"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    endpoint: str
+    p256dh: str
+    auth: str
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
