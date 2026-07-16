@@ -69,7 +69,7 @@ class PushSubscriptionRequest(BaseModel):
 @router.post("/push/subscribe")
 def subscribe_push(
     data: PushSubscriptionRequest,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
 ):
     existing = session.exec(
         select(PushSubscription).where(
@@ -78,7 +78,9 @@ def subscribe_push(
     ).first()
 
     if existing:
-        return {"status": "already subscribed"}
+        return {
+            "status": "already subscribed"
+        }
 
     try:
         subscription = PushSubscription(
