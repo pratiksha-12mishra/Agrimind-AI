@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const subscription = await request.json()
 
-    const response = await fetch(`${BACKEND_URL}/push/subscribe`, {
+const response = await fetch(`${BACKEND_URL}/notifications/push/subscribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(subscription),
