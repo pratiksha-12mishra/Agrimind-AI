@@ -1,30 +1,17 @@
 import os
 import json
-from pywebpush import webpush, WebPushException
-from sqlmodel import Session, select
-
-from app.db.database import engine
+from pywebpush import webpush
 from app.db.models import PushSubscription
 
 VAPID_PRIVATE_KEY_PATH = os.getenv("VAPID_PRIVATE_KEY_PATH", "vapid_private.pem")
 VAPID_EMAIL = os.getenv("VAPID_EMAIL", "mailto:agrimindai@gmail.com")
 
 
-def _load_vapid_private_key() -> str:
-    with open(VAPID_PRIVATE_KEY_PATH, "r") as f:
-        return f.read()
-
-
-def send_web_push(notification: dict):
-    """Send a web push notification to all subscribed clients."""
-    with Session(engine) as session:
-        subscriptions = session.exec(select(PushSubscription)).all()
-
+def send_web_push(notification: dict, subscriptions: list[PushSubscription]):
+    """Send a web push notification to the given list of subscriptions."""
     if not subscriptions:
-        print("⏭️  No push subscriptions yet, skipping web push")
+        print("⏭️  No push subscriptions for this farm's owner, skipping web push")
         return
-
-    private_key = _load_vapid_private_key()
 
     payload = json.dumps({
         "title": notification["title"],
@@ -44,9 +31,9 @@ def send_web_push(notification: dict):
             webpush(
                 subscription_info=subscription_info,
                 data=payload,
-                vapid_private_key=private_key,
+                vapid_private_key=VAPID_PRIVATE_KEY_PATH,
                 vapid_claims={"sub": VAPID_EMAIL},
             )
             print(f"✅ Push sent to {sub.endpoint[:40]}...")
-        except WebPushException as e:
+        except Exception as e:
             print(f"❌ Push failed for {sub.endpoint[:40]}...: {e}")

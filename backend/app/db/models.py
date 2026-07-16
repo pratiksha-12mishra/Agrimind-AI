@@ -1,12 +1,35 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
 from datetime import datetime
-from typing import Optional
-from sqlmodel import SQLModel, Field
-from datetime import datetime
-from typing import Optional
-from datetime import datetime
-from typing import Optional
+
+
+class User(SQLModel, table=True):
+    __tablename__ = "user"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    email: str = Field(unique=True, index=True)
+    hashed_password: str
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Farm(SQLModel, table=True):
+    __tablename__ = "farm"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    name: str
+    city: str
+    crop: str
+    growth_stage: str
+    area: float
+    soil_type: str
+    irrigation_method: str
+
+    device_id: Optional[str] = Field(default=None, unique=True, index=True)
+    owner_id: Optional[int] = Field(default=None, foreign_key="user.id")
+
 
 class MotorLog(SQLModel, table=True):
     __tablename__ = "motor_log"
@@ -18,6 +41,8 @@ class MotorLog(SQLModel, table=True):
     status: str          # "sent", "success", "failed"
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class Notification(SQLModel, table=True):
     __tablename__ = "notification"
 
@@ -25,10 +50,11 @@ class Notification(SQLModel, table=True):
 
     title: str
     message: str
-
+    farm_id: Optional[int] = Field(default=None, foreign_key="farm.id")
     is_read: bool = False
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
 
 class RecommendationHistory(SQLModel, table=True):
     __tablename__ = "recommendation_history"
@@ -50,20 +76,6 @@ class RecommendationHistory(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-class Farm(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-
-    name: str
-    city: str
-
-    crop: str
-    growth_stage: str
-
-    area: float
-
-    soil_type: str
-
-    irrigation_method: str
 
 class SensorReading(SQLModel, table=True):
     __tablename__ = "sensor_reading"
@@ -82,6 +94,7 @@ class SensorReading(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class PushSubscription(SQLModel, table=True):
     __tablename__ = "push_subscription"
 
@@ -90,15 +103,6 @@ class PushSubscription(SQLModel, table=True):
     endpoint: str
     p256dh: str
     auth: str
-
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-class User(SQLModel, table=True):
-    __tablename__ = "user"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-
-    email: str = Field(unique=True, index=True)
-    hashed_password: str
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
