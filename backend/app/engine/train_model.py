@@ -19,7 +19,7 @@ from water_lookup import CROPS, GROWTH_STAGES, get_base_water_requirement
 
 np.random.seed(42)
 
-N_SAMPLES = 8000
+N_SAMPLES = 15000
 
 
 def generate_synthetic_data(n=N_SAMPLES):

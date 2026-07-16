@@ -3,8 +3,35 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.weather.openweather_client import get_weather
 from app.engine.decision_engine import decide_irrigation
 from pydantic import BaseModel, Field
+from app.routes import farms
+from app.routes import weather
+from app.routes import history
+from app.routes import notifications
+from app.routes import motor
+from app.routes import voice
+from app.routes import schedule
+from app.db.database import create_db_and_tables
+from fastapi import Depends
+from sqlmodel import Session
+from app.db.database import get_session
+from app.db.models import RecommendationHistory
+from app.mqtt.client import connect
+from app.notifications.scheduler import start_scheduler
+from app.routes import auth
+
+
+
+
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
+    connect()
+    start_scheduler()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -12,6 +39,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(farms.router)
+app.include_router(weather.router)
+app.include_router(history.router)
+app.include_router(notifications.router)
+app.include_router(motor.router)
+app.include_router(voice.router)
+app.include_router(schedule.router)
+app.include_router(auth.router)
 
 class RecommendationRequest(BaseModel):
     crop: str = Field(
@@ -35,12 +71,12 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/weather/{city}")
-def weather(city: str):
-    return get_weather(city)
 
 @app.post("/recommend")
-def recommend(data: RecommendationRequest):
+def recommend(
+    data: RecommendationRequest,
+    session: Session = Depends(get_session)
+):
 
     weather = get_weather(data.city)
 
@@ -63,6 +99,22 @@ def recommend(data: RecommendationRequest):
         humidity=humidity,
         rain_probability=rain_probability,
     )
+
+    history = RecommendationHistory(
+        city=data.city,
+        crop=data.crop,
+        growth_stage=data.growth_stage,
+        soil_moisture=data.soil_moisture,
+        temperature=temperature,
+        humidity=humidity,
+        rain_probability=rain_probability,
+        decision=result["decision"],
+        water_required=result["water_required"],
+        confidence=result["confidence"],
+    )
+
+    session.add(history)
+    session.commit()
 
     return {
         "weather": weather,
