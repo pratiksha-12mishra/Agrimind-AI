@@ -18,9 +18,7 @@ from app.db.models import RecommendationHistory
 from app.mqtt.client import connect
 from app.notifications.scheduler import start_scheduler
 from app.routes import auth
-
-
-
+from app.routes import sensors
 
 
 app = FastAPI()
@@ -48,6 +46,7 @@ app.include_router(motor.router)
 app.include_router(voice.router)
 app.include_router(schedule.router)
 app.include_router(auth.router)
+app.include_router(sensors.router)
 
 class RecommendationRequest(BaseModel):
     crop: str = Field(
