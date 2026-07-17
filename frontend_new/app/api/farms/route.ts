@@ -27,7 +27,10 @@ export async function POST(request: NextRequest) {
     const raw = await response.json()
 
     if (!response.ok) {
-      return NextResponse.json({ error: raw.detail || `Error ${response.status}` }, { status: response.status })
+      const errorMessage = Array.isArray(raw.detail)
+        ? raw.detail.map((e: any) => `${e.loc?.join('.')}: ${e.msg}`).join('; ')
+        : raw.detail || `Error ${response.status}`
+      return NextResponse.json({ error: errorMessage, debug: raw }, { status: response.status })
     }
 
     return NextResponse.json(raw)

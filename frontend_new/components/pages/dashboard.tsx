@@ -69,7 +69,7 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
         const data = await res.json()
 
         if (!res.ok) {
-          setSetupError(data.error || 'Could not load your farms')
+          setSetupError(typeof data.error === 'string' ? data.error : JSON.stringify(data.error) || 'Could not claim device')
           setFarmLoading(false)
           return
         }
@@ -105,7 +105,7 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
       })
       const data = await res.json()
       if (!res.ok) {
-        setSetupError(data.error || 'Could not create farm')
+        setSetupError(typeof data.error === 'string' ? data.error : JSON.stringify(data.error) || 'Could not claim device')
         setCreatingFarm(false)
         return
       }
@@ -129,7 +129,7 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
       })
       const data = await res.json()
       if (!res.ok) {
-        setSetupError(data.error || 'Could not claim device')
+        setSetupError(typeof data.error === 'string' ? data.error : JSON.stringify(data.error) || 'Could not claim device')
         setClaimingDevice(false)
         return
       }
