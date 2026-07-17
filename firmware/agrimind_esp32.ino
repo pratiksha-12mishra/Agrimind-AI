@@ -42,9 +42,9 @@
 #define RELAY_PIN        26    // Relay control pin
 #define DHTTYPE DHT11
 // ─── Timing ────────────────────────────────────────────────────────────────
-#define SENSOR_INTERVAL     60000   // Publish sensor data every 60 seconds
+#define SENSOR_INTERVAL     30000   // Publish sensor data every 60 seconds
 #define HEARTBEAT_INTERVAL  30000   // Heartbeat every 30 seconds
-#define RECONNECT_DELAY     5000    // Wait 5s between reconnect attempts
+#define RECONNECT_DELAY     10000    // Wait 5s between reconnect attempts
 
 // ─── Offline Buffer ────────────────────────────────────────────────────────
 #define BUFFER_SIZE 10
@@ -95,13 +95,13 @@ bool readDHT(float &temperature, float &humidity) {
 // Motor control
 // ───────────────────────────────────────────────────────────────────────────
 void startMotor() {
-  digitalWrite(RELAY_PIN, LOW);   // Active LOW relay
+  digitalWrite(RELAY_PIN, LOW);   // LOW = relay ON (active low module)
   motorRunning = true;
   Serial.println("[MOTOR] Started");
 }
 
 void stopMotor() {
-  digitalWrite(RELAY_PIN, HIGH);  // Active HIGH = relay OFF
+  digitalWrite(RELAY_PIN, HIGH);  // HIGH = relay OFF
   motorRunning = false;
   Serial.println("[MOTOR] Stopped");
 }
@@ -165,20 +165,20 @@ void connectWiFi() {
 bool connectMQTT() {
   Serial.print("[MQTT] Connecting to HiveMQ...");
 
-  String clientId = "esp32_" + String((uint32_t)ESP.getEfuseMac(), HEX);
-Serial.print("[MQTT] Using client ID: ");
-Serial.println(clientId);
-if (mqttClient.connect(clientId.c_str(), MQTT_USERNAME, MQTT_PASSWORD)) {
-    Serial.println(" Connected!");
+  // Set shorter timeout so TLS doesn't hang forever
+  wifiClient.setTimeout(10);
 
-    // Subscribe to motor commands
+  String clientId = "esp32_" + String((uint32_t)ESP.getEfuseMac(), HEX);
+  Serial.print("[MQTT] Using client ID: ");
+  Serial.println(clientId);
+
+  if (mqttClient.connect(clientId.c_str(), MQTT_USERNAME, MQTT_PASSWORD)) {
+    Serial.println(" Connected!");
     mqttClient.subscribe(TOPIC_MOTOR);
     Serial.println("[MQTT] Subscribed to: " + String(TOPIC_MOTOR));
-
-    // Publish online status
     mqttClient.publish(TOPIC_HEARTBEAT, "online");
 
-    // Flush offline buffer if any readings were stored
+    // Flush offline buffer
     if (bufferCount > 0) {
       Serial.print("[BUFFER] Flushing ");
       Serial.print(bufferCount);
@@ -191,12 +191,12 @@ if (mqttClient.connect(clientId.c_str(), MQTT_USERNAME, MQTT_PASSWORD)) {
           offlineBuffer[idx].humidity,
           offlineBuffer[idx].dhtAvailable
         );
-        delay(200);
+        delay(100);
+        yield(); // Feed watchdog during buffer flush
       }
       bufferCount = 0;
       Serial.println("[BUFFER] Flushed.");
     }
-
     return true;
   } else {
     Serial.print(" Failed. RC=");
@@ -252,8 +252,9 @@ void setup() {
   Serial.println("============================================");
 
   // Pin setup
-  pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, HIGH);  // Relay OFF on boot
+pinMode(RELAY_PIN, OUTPUT);
+digitalWrite(RELAY_PIN, HIGH);  // Force OFF on boot
+delay(100);                      // Give it time to settle
   pinMode(SOIL_PIN, INPUT);
 
   // DHT11 setup (optional — fails silently if sensor faulty)
@@ -277,9 +278,9 @@ void setup() {
   wifiClient.setInsecure();
   mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
   mqttClient.setCallback(onMqttMessage);
-  mqttClient.setKeepAlive(120);
+  mqttClient.setKeepAlive(30);
   mqttClient.setBufferSize(512);
-
+  mqttClient.setSocketTimeout(10);
   // Connect MQTT
   connectMQTT();
 
@@ -299,16 +300,19 @@ void loop() {
   }
 
   // ── MQTT watchdog ──
+// ── MQTT watchdog ──
   if (!mqttClient.connected()) {
     if (now - lastReconnectAttempt > RECONNECT_DELAY) {
       lastReconnectAttempt = now;
       Serial.println("[MQTT] Disconnected. Reconnecting...");
+      yield(); // Feed watchdog before TLS handshake
       connectMQTT();
+      yield(); // Feed watchdog after
     }
   } else {
-    mqttClient.loop();  // Process incoming messages (motor commands)
+    mqttClient.loop();
+    yield(); // Feed watchdog after processing messages
   }
-
   // ── Publish sensor data every 60 seconds ──
   if (now - lastSensorPublish > SENSOR_INTERVAL) {
     lastSensorPublish = now;
