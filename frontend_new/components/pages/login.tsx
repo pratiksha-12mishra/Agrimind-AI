@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check } from 'lucide-react'
+import { Check, AlertCircle, Loader2 } from 'lucide-react'
 
 interface LoginProps {
   setIsLoggedIn: (logged: boolean) => void
@@ -11,10 +11,10 @@ interface LoginProps {
 export default function Login({ setIsLoggedIn, setCurrentTab }: LoginProps) {
   const [isLogin, setIsLogin] = useState(true)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
-    mobile: '',
     password: '',
     confirmPassword: '',
   })
@@ -26,14 +26,47 @@ export default function Login({ setIsLoggedIn, setCurrentTab }: LoginProps) {
     })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setShowSuccess(true)
-    setTimeout(() => {
-      setIsLoggedIn(true)
-      setCurrentTab('predict')
-      setShowSuccess(false)
-    }, 1500)
+    setError(null)
+
+    if (!isLogin && formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup'
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || (isLogin ? 'Login failed' : 'Signup failed'))
+        setLoading(false)
+        return
+      }
+
+      // Store JWT for future authenticated requests
+      localStorage.setItem('agrimind-token', data.access_token)
+      localStorage.setItem('agrimind-email', formData.email)
+
+      setShowSuccess(true)
+      setTimeout(() => {
+        setIsLoggedIn(true)
+        setCurrentTab('predict')
+        setShowSuccess(false)
+      }, 1000)
+    } catch (err: any) {
+      setError(err?.message || 'Network error — please try again')
+      setLoading(false)
+    }
   }
 
   return (
@@ -63,12 +96,11 @@ export default function Login({ setIsLoggedIn, setCurrentTab }: LoginProps) {
             <button
               onClick={() => {
                 setIsLogin(true)
-                setFormData({ name: '', email: '', mobile: '', password: '', confirmPassword: '' })
+                setError(null)
+                setFormData({ email: '', password: '', confirmPassword: '' })
               }}
               className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-                isLogin
-                  ? 'bg-card text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                isLogin ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Login
@@ -76,12 +108,11 @@ export default function Login({ setIsLoggedIn, setCurrentTab }: LoginProps) {
             <button
               onClick={() => {
                 setIsLogin(false)
-                setFormData({ name: '', email: '', mobile: '', password: '', confirmPassword: '' })
+                setError(null)
+                setFormData({ email: '', password: '', confirmPassword: '' })
               }}
               className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-                !isLogin
-                  ? 'bg-card text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                !isLogin ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Register
@@ -90,65 +121,30 @@ export default function Login({ setIsLoggedIn, setCurrentTab }: LoginProps) {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Farmer Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required={!isLogin}
-                  placeholder="Enter your full name"
-                  className="w-full px-4 py-2 rounded-lg border border-border bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            )}
-
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Email or Mobile Number
-              </label>
+              <label className="block text-sm font-medium text-foreground mb-2">Email</label>
               <input
-                type={isLogin ? 'text' : 'email'}
+                type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 required
-                placeholder={isLogin ? 'Email or Mobile' : 'your@email.com'}
+                autoComplete="email"
+                placeholder="your@email.com"
                 className="w-full px-4 py-2 rounded-lg border border-border bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
 
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Mobile Number
-                </label>
-                <input
-                  type="tel"
-                  name="mobile"
-                  value={formData.mobile}
-                  onChange={handleChange}
-                  required={!isLogin}
-                  placeholder="+1 (555) 000-0000"
-                  className="w-full px-4 py-2 rounded-lg border border-border bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            )}
-
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Password
-              </label>
+              <label className="block text-sm font-medium text-foreground mb-2">Password</label>
               <input
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 required
+                minLength={6}
+                autoComplete={isLogin ? 'current-password' : 'new-password'}
                 placeholder="••••••••"
                 className="w-full px-4 py-2 rounded-lg border border-border bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
@@ -156,33 +152,44 @@ export default function Login({ setIsLoggedIn, setCurrentTab }: LoginProps) {
 
             {!isLogin && (
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Confirm Password
-                </label>
+                <label className="block text-sm font-medium text-foreground mb-2">Confirm Password</label>
                 <input
                   type="password"
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required={!isLogin}
+                  autoComplete="new-password"
                   placeholder="••••••••"
                   className="w-full px-4 py-2 rounded-lg border border-border bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             )}
 
+            {error && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive flex gap-3">
+                <AlertCircle className="text-destructive flex-shrink-0" size={18} />
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            )}
+
             <button
               type="submit"
-              className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity mt-6"
+              disabled={loading}
+              className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity mt-6 disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isLogin ? 'Login' : 'Register'}
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  {isLogin ? 'Logging in...' : 'Creating account...'}
+                </>
+              ) : isLogin ? (
+                'Login'
+              ) : (
+                'Register'
+              )}
             </button>
           </form>
-
-          {/* Info Message */}
-          <p className="text-xs text-muted-foreground text-center mt-6">
-            {isLogin ? 'No real authentication. Click login to continue.' : 'No real authentication. Click register to continue.'}
-          </p>
         </div>
       </div>
     </div>

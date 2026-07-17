@@ -25,6 +25,10 @@ export default function Page() {
     const saved = localStorage.getItem('agrimind-theme')
     if (saved === 'dark') setIsDarkMode(true)
   }, [])
+  useEffect(() => {
+    const token = localStorage.getItem('agrimind-token')
+    if (token) setIsLoggedIn(true)
+  }, [])
 
   // useEffect(() => {
   //   localStorage.setItem('agrimind-theme', isDarkMode ? 'dark' : 'light')
