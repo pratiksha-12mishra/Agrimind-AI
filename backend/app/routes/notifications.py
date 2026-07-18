@@ -64,6 +64,7 @@ class PushKeys(BaseModel):
 class PushSubscriptionRequest(BaseModel):
     endpoint: str
     keys: PushKeys
+    farm_id: int
 
 
 @router.post("/push/subscribe")
@@ -78,15 +79,17 @@ def subscribe_push(
     ).first()
 
     if existing:
-        return {
-            "status": "already subscribed"
-        }
+        existing.farm_id = data.farm_id
+        session.add(existing)
+        session.commit()
+        return {"status": "already subscribed, farm updated"}
 
     try:
         subscription = PushSubscription(
             endpoint=data.endpoint,
             p256dh=data.keys.p256dh,
             auth=data.keys.auth,
+            farm_id=data.farm_id,
         )
 
         session.add(subscription)

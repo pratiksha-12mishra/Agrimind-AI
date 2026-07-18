@@ -25,10 +25,10 @@ def get_latest_reading_for_device(device_id: str):
         ).first()
 
 
-def get_subscriptions_for_user(user_id: int):
+def get_subscriptions_for_farm(farm_id: int):
     with Session(engine) as session:
         return session.exec(
-            select(PushSubscription).where(PushSubscription.user_id == user_id)
+            select(PushSubscription).where(PushSubscription.farm_id == farm_id)
         ).all()
 
 
@@ -90,11 +90,11 @@ async def check_and_notify():
 
             print("Notification saved to DB")
 
-            if farm.owner_id:
-                subscriptions = get_subscriptions_for_user(farm.owner_id)
+            if farm.id:
+                subscriptions = get_subscriptions_for_farm(farm.id)
                 send_web_push(notification_data, subscriptions)
             else:
-                print("⏭️  Farm has no owner, skipping push")
+                print("⏭️  Farm has no id, skipping push")
 
             print(f"✅ Done: {farm.name} — {result['decision']}")
 

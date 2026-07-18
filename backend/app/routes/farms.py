@@ -14,11 +14,16 @@ router = APIRouter(prefix="/farms", tags=["Farms"])
 @router.post("/", response_model=Farm)
 def create_farm(
     farm: Farm,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
+    farm.owner_id = current_user.id
+    farm.device_id = None
+
     session.add(farm)
     session.commit()
     session.refresh(farm)
+
     return farm
 
 

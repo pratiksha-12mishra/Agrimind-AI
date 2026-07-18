@@ -103,6 +103,6 @@ class PushSubscription(SQLModel, table=True):
     endpoint: str
     p256dh: str
     auth: str
-    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    farm_id: Optional[int] = Field(default=None, foreign_key="farm.id")
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
