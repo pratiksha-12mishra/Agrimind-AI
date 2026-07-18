@@ -204,6 +204,7 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
       setClaimingDevice(false)
     }
   }
+
   // Subscribe to push notifications for this specific farm, once confirmed
   useEffect(() => {
     if (!isLoggedIn || !farm?.id) return
@@ -213,7 +214,6 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
   // Step 2: once a device is claimed, poll real sensor data
   useEffect(() => {
     if (!isLoggedIn || !farm?.device_id) return
-  
 
     const poll = async () => {
       try {
@@ -230,8 +230,12 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
 
         const lastSeen = data.last_seen ?? data.timestamp
         if (lastSeen) {
-          const ageMs = Date.now() - new Date(lastSeen).getTime()
-          setSensorOnline(ageMs < 5 * 60 * 1000)
+          // Backend sends timestamps without a timezone marker (e.g. no trailing "Z"),
+          // which browsers wrongly interpret as local time instead of UTC.
+          // Force UTC interpretation explicitly to get the correct age.
+          const utcString = lastSeen.endsWith('Z') || lastSeen.includes('+') ? lastSeen : `${lastSeen}Z`
+          const ageMs = Date.now() - new Date(utcString).getTime()
+          setSensorOnline(ageMs < 5 * 60 * 1000 && ageMs >= 0) // 5 minutes, and not a future timestamp
         } else {
           setSensorOnline(true)
         }
