@@ -3,8 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 const BACKEND_URL = 'https://agrimind-ai-kr6q.onrender.com'
 const REQUEST_TIMEOUT = 60000
 
-export async function POST(request: NextRequest, { params }: { params: { farmId: string } }) {
+export async function POST(request: NextRequest, context: { params: Promise<{ farmId: string }> }) {
   try {
+    const { farmId } = await context.params
+
     const authHeader = request.headers.get('authorization')
     if (!authHeader) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -15,7 +17,7 @@ export async function POST(request: NextRequest, { params }: { params: { farmId:
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
 
-    const response = await fetch(`${BACKEND_URL}/farms/${params.farmId}/claim-device`, {
+    const response = await fetch(`${BACKEND_URL}/farms/${farmId}/claim-device`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: authHeader },
       body: JSON.stringify(body),

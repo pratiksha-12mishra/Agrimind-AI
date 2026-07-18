@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { LanguageProvider } from '@/lib/language-context'
-import { subscribeToPush } from '@/lib/push-notifications'
 import Navbar from '@/components/navbar'
 import Home from '@/components/pages/home'
 import Login from '@/components/pages/login'
@@ -25,26 +24,19 @@ export default function Page() {
     const saved = localStorage.getItem('agrimind-theme')
     if (saved === 'dark') setIsDarkMode(true)
   }, [])
+
   useEffect(() => {
     const token = localStorage.getItem('agrimind-token')
     if (token) setIsLoggedIn(true)
   }, [])
 
-  // useEffect(() => {
-  //   localStorage.setItem('agrimind-theme', isDarkMode ? 'dark' : 'light')
-  // }, [isDarkMode])
-  // useEffect(() => {
-  //   if (isLoggedIn) {
-  //     subscribeToPush()
-  //   }
-  // }, [isLoggedIn])
   useEffect(() => {
-  console.log('[v0] page.tsx useEffect fired, isLoggedIn =', isLoggedIn)
-  if (isLoggedIn) {
-    console.log('[v0] Calling subscribeToPush() now...')
-    subscribeToPush()
-  }
-}, [isLoggedIn])
+    localStorage.setItem('agrimind-theme', isDarkMode ? 'dark' : 'light')
+  }, [isDarkMode])
+
+  // Push subscription is now farm-scoped, not account-scoped —
+  // it's triggered from Dashboard once a farm/device is confirmed instead.
+
   const renderPage = () => {
     switch (currentTab) {
       case 'home':

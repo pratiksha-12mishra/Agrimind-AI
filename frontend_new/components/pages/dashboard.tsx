@@ -16,6 +16,7 @@ import {
   Legend,
 } from 'recharts'
 import { authFetch } from '@/lib/auth'
+import { subscribeToPush } from '@/lib/push-notifications'
 
 interface DashboardProps {
   isLoggedIn: boolean
@@ -46,6 +47,8 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
   const [claimingDevice, setClaimingDevice] = useState(false)
   const [newFarmName, setNewFarmName] = useState('Demo Farm')
   const [newFarmCity, setNewFarmCity] = useState('Jabalpur')
+  const [createDebug, setCreateDebug] = useState<any>(null)
+  const [mineDebug, setMineDebug] = useState<any>(null)
 
   // Sensor/dashboard state
   const [trendData, setTrendData] = useState<{ time: string; moisture: number }[]>([])
@@ -56,6 +59,27 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
   const [motorStatus, setMotorStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [motorMessage, setMotorMessage] = useState('')
   const [motorState, setMotorState] = useState<'off' | 'on'>('off')
+  const [triggerStatus, setTriggerStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [triggerMessage, setTriggerMessage] = useState('')
+
+  const triggerNotificationCheck = async () => {
+    setTriggerStatus('sending')
+    setTriggerMessage('')
+    try {
+      const res = await fetch('/api/notifications/trigger-check', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) {
+        setTriggerStatus('error')
+        setTriggerMessage(data.error || 'Failed to trigger check')
+        return
+      }
+      setTriggerStatus('sent')
+      setTriggerMessage('Notification check triggered — check your phone for a push notification.')
+    } catch (err: any) {
+      setTriggerStatus('error')
+      setTriggerMessage(err?.message || 'Network error triggering check')
+    }
+  }
 
   // Step 1: check if the logged-in user already has a farm with a claimed device
   useEffect(() => {
@@ -104,14 +128,49 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
         }),
       })
       const data = await res.json()
+      setCreateDebug(data) // capture exactly what the create endpoint returns
+
       if (!res.ok) {
-        setSetupError(typeof data.error === 'string' ? data.error : JSON.stringify(data.error) || 'Could not claim device')
+        setSetupError(typeof data.error === 'string' ? data.error : JSON.stringify(data.error) || 'Could not create farm')
         setCreatingFarm(false)
         return
       }
-      setFarms((prev) => [...prev, data])
-      // Immediately claim the device on this new farm
-      await handleClaimDevice(data.id)
+
+      // Try to find an ID directly on the create response first, checking a few possible shapes
+      const directId = data?.id ?? data?.farm?.id ?? data?.farm_id ?? null
+
+      if (directId) {
+        await handleClaimDevice(directId)
+        setCreatingFarm(false)
+        return
+      }
+
+      // Fallback: re-fetch /farms/mine, with one short retry in case of replication lag
+      let refreshedData: Farm[] = []
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const refreshed = await authFetch('/api/farms/mine')
+        const parsed = await refreshed.json()
+        setMineDebug(parsed) // capture exactly what /farms/mine returns
+
+        if (refreshed.ok && Array.isArray(parsed)) {
+          refreshedData = parsed
+          const found = parsed.filter((f: Farm) => !f.device_id)
+          if (found.length > 0) break
+        }
+        await new Promise((r) => setTimeout(r, 1000)) // wait 1s before retry
+      }
+
+      setFarms(refreshedData)
+
+      const unclaimed = refreshedData.filter((f: Farm) => !f.device_id).sort((a, b) => b.id - a.id)
+
+      if (unclaimed.length === 0) {
+        setSetupError('Farm created, but no unclaimed farm found. See debug panel below for raw responses.')
+        setCreatingFarm(false)
+        return
+      }
+
+      await handleClaimDevice(unclaimed[0].id)
     } catch (err: any) {
       setSetupError(err?.message || 'Network error creating farm')
     } finally {
@@ -145,10 +204,16 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
       setClaimingDevice(false)
     }
   }
+  // Subscribe to push notifications for this specific farm, once confirmed
+  useEffect(() => {
+    if (!isLoggedIn || !farm?.id) return
+    subscribeToPush(farm.id)
+  }, [isLoggedIn, farm?.id])
 
   // Step 2: once a device is claimed, poll real sensor data
   useEffect(() => {
     if (!isLoggedIn || !farm?.device_id) return
+  
 
     const poll = async () => {
       try {
@@ -297,6 +362,20 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
               </button>
             </div>
           )}
+
+          <details className="mt-6 bg-card rounded-lg p-4 border border-border">
+            <summary className="cursor-pointer text-sm font-semibold text-muted-foreground">
+              Debug: raw farm create + list responses
+            </summary>
+            <p className="text-xs text-muted-foreground mt-3 mb-1">POST /api/farms response:</p>
+            <pre className="text-xs overflow-auto p-3 bg-secondary rounded-lg text-foreground max-h-60">
+              {JSON.stringify(createDebug, null, 2)}
+            </pre>
+            <p className="text-xs text-muted-foreground mt-3 mb-1">GET /api/farms/mine response:</p>
+            <pre className="text-xs overflow-auto p-3 bg-secondary rounded-lg text-foreground max-h-60">
+              {JSON.stringify(mineDebug, null, 2)}
+            </pre>
+          </details>
         </div>
       </div>
     )
@@ -482,6 +561,25 @@ export default function Dashboard({ isLoggedIn }: DashboardProps) {
           )}
           {motorStatus === 'error' && (
             <div className="p-3 bg-destructive/10 border border-destructive rounded-lg text-sm text-destructive">{motorMessage}</div>
+          )}
+        </div>
+        <div className="bg-card border border-border rounded-lg p-8 mb-8">
+          <h3 className="text-xl font-bold text-foreground mb-1">Test Push Notification</h3>
+          <p className="text-xs text-muted-foreground mb-6">
+            Manually trigger a real notification check for this farm — useful for testing before relying on the hourly job
+          </p>
+          <button
+            onClick={triggerNotificationCheck}
+            disabled={triggerStatus === 'sending'}
+            className="w-full py-3 rounded-lg bg-accent text-accent-foreground font-semibold hover:opacity-90 disabled:opacity-50"
+          >
+            {triggerStatus === 'sending' ? 'Triggering...' : 'Send Test Notification'}
+          </button>
+          {triggerStatus === 'sent' && (
+            <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg text-sm text-primary">✓ {triggerMessage}</div>
+          )}
+          {triggerStatus === 'error' && (
+            <div className="mt-4 p-3 bg-destructive/10 border border-destructive rounded-lg text-sm text-destructive">{triggerMessage}</div>
           )}
         </div>
 
