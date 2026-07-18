@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Cloud, Droplets, AlertCircle, Loader2 } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 import { useLanguage } from '@/lib/language-context'
+import { Droplets as DropletsIcon, RefreshCw } from 'lucide-react'
 
 export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string) => void }) {
   const { t } = useLanguage()
@@ -19,6 +20,37 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [weather, setWeather] = useState<any>(null)
+  const [liveSensor, setLiveSensor] = useState<any>(null)
+  const [sensorFetchError, setSensorFetchError] = useState<string | null>(null)
+  const [sensorLoading, setSensorLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchSensor = async () => {
+      setSensorLoading(true)
+      setSensorFetchError(null)
+      try {
+        const res = await fetch('/api/sensors/latest')
+        const data = await res.json()
+        if (!res.ok) {
+          setSensorFetchError(data.error || 'No live sensor available yet')
+          setSensorLoading(false)
+          return
+        }
+        setLiveSensor(data)
+      } catch (err: any) {
+        setSensorFetchError('Could not reach sensor endpoint')
+      } finally {
+        setSensorLoading(false)
+      }
+    }
+    fetchSensor()
+  }, [])
+
+  const applySensorReading = () => {
+    if (liveSensor && typeof liveSensor.soil_moisture === 'number') {
+      setFormData((prev) => ({ ...prev, soil_moisture: liveSensor.soil_moisture }))
+    }
+  }
 
   const cropOptions = [
     { label: 'Wheat', value: 'wheat' },
@@ -138,6 +170,36 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
           <div className="lg:col-span-1">
             <div className="bg-card rounded-lg p-8 border border-border sticky top-24">
               <h2 className="text-2xl font-bold text-foreground mb-6">{t('predict_field_info')}</h2>
+
+              {/* Live sensor reading card */}
+              {!sensorLoading && liveSensor && typeof liveSensor.soil_moisture === 'number' && (
+                <div className="mb-5 p-4 rounded-lg border border-primary/20 bg-primary/5">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <DropletsIcon size={16} className="text-primary" />
+                      Live sensor reading: {liveSensor.soil_moisture}%
+                    </p>
+                    <button
+                      type="button"
+                      onClick={applySensorReading}
+                      className="text-xs px-3 py-1 rounded-full bg-primary text-primary-foreground font-semibold hover:opacity-90"
+                    >
+                      Use this reading
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    From device {liveSensor.device_id}. You can still adjust the slider below manually.
+                  </p>
+                </div>
+              )}
+
+              {!sensorLoading && sensorFetchError && (
+                <div className="mb-5 p-3 rounded-lg border border-border bg-secondary text-xs text-muted-foreground flex items-center gap-2">
+                  <RefreshCw size={14} />
+                  No live sensor connected yet — enter soil moisture manually below.
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
