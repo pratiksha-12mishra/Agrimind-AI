@@ -132,8 +132,14 @@ def debug_vapid_key():
     from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
     import base64
     import os
+    import hashlib
 
     path = os.getenv("VAPID_PRIVATE_KEY_PATH", "vapid_private.pem")
+
+    with open(path, "rb") as f:
+        content = f.read()
+
+    file_hash = hashlib.sha256(content).hexdigest()
 
     try:
         v = Vapid.from_file(private_key_file=path)
@@ -142,11 +148,13 @@ def debug_vapid_key():
         return {
             "resolved_path": os.path.abspath(path),
             "file_exists": os.path.exists(path),
+            "file_sha256": file_hash,
             "public_key": b64,
         }
     except Exception as e:
         return {
             "resolved_path": os.path.abspath(path),
             "file_exists": os.path.exists(path),
+            "file_sha256": file_hash,
             "error": str(e),
         }
