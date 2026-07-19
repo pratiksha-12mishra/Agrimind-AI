@@ -16,11 +16,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure lowercase values for crop and growth_stage
-    const payload = {
+    const payload: Record<string, any> = {
       crop: body.crop.toLowerCase(),
       growth_stage: body.growth_stage.toLowerCase(),
       soil_moisture: body.soil_moisture,
       city: body.city,
+    }
+
+    // Forward optional live sensor overrides when present — omitting them
+    // entirely keeps this fully backward compatible per Mradanshi's spec
+    if (typeof body.sensor_temperature === 'number') {
+      payload.sensor_temperature = body.sensor_temperature
+    }
+    if (typeof body.sensor_humidity === 'number') {
+      payload.sensor_humidity = body.sensor_humidity
     }
 
     console.log('[v0] API Proxy - Request payload:', JSON.stringify(payload))

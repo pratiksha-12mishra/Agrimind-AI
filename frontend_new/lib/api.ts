@@ -5,6 +5,8 @@ export interface RecommendationRequest {
   growth_stage: string
   soil_moisture: number
   city: string
+  sensor_temperature?: number
+  sensor_humidity?: number
 }
 
 export interface RecommendationResponse {
@@ -67,11 +69,20 @@ export const apiClient = {
     try {
       console.log('[v0] Requesting recommendation with payload:', JSON.stringify(data))
 
-      const payload = {
+      const payload: Record<string, any> = {
         crop: (data as any).crop_type ? (data as any).crop_type.toLowerCase() : data.crop.toLowerCase(),
         growth_stage: data.growth_stage.toLowerCase(),
         soil_moisture: data.soil_moisture,
         city: data.city,
+      }
+
+      // Only include sensor overrides when actually available — omitting
+      // them entirely keeps this fully backward compatible per Mradanshi's spec
+      if (typeof data.sensor_temperature === 'number') {
+        payload.sensor_temperature = data.sensor_temperature
+      }
+      if (typeof data.sensor_humidity === 'number') {
+        payload.sensor_humidity = data.sensor_humidity
       }
 
       console.log('[v0] Final payload being sent:', JSON.stringify(payload))
