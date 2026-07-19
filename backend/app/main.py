@@ -19,6 +19,7 @@ from app.mqtt.client import connect
 from app.notifications.scheduler import start_scheduler
 from app.routes import auth
 from app.routes import sensors
+from typing import Optional
 
 
 app = FastAPI()
@@ -48,17 +49,21 @@ app.include_router(schedule.router)
 app.include_router(auth.router)
 app.include_router(sensors.router)
 
+
 class RecommendationRequest(BaseModel):
     crop: str = Field(
-    ...,
-    pattern="^(wheat|rice|cotton|maize|sugarcane|soybean|groundnut|potato|tomato|onion|chickpea|mustard)$"
+        ...,
+        pattern="^(wheat|rice|cotton|maize|sugarcane|soybean|groundnut|potato|tomato|onion|chickpea|mustard)$"
     )
     growth_stage: str = Field(
-    ...,
-    pattern="^(seedling|vegetative|flowering|maturity)$"
+        ...,
+        pattern="^(seedling|vegetative|flowering|maturity)$"
     )
     soil_moisture: float = Field(..., ge=0, le=100)
     city: str = Field(..., min_length=2, max_length=50)
+    sensor_temperature: Optional[float] = Field(default=None, description="Live DHT11 temperature, overrides OpenWeather if provided")
+    sensor_humidity: Optional[float] = Field(default=None, ge=0, le=100, description="Live DHT11 humidity, overrides OpenWeather if provided")
+
 
 @app.get("/")
 def root():
@@ -68,7 +73,6 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
 
 
 @app.post("/recommend")
@@ -85,9 +89,11 @@ def recommend(
             detail=weather["error"]
         )
 
-    temperature = weather["temperature"]
-    humidity = weather["humidity"]
+    # Use live sensor values when provided, fall back to OpenWeather otherwise
+    temperature = data.sensor_temperature if data.sensor_temperature is not None else weather["temperature"]
+    humidity = data.sensor_humidity if data.sensor_humidity is not None else weather["humidity"]
 
+    # Rain probability always comes from OpenWeather — no sensor equivalent exists
     rain_probability = weather["rain_probability"]
 
     result = decide_irrigation(
