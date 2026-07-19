@@ -125,3 +125,28 @@ async def trigger_check():
     return {
         "status": "triggered"
     }
+
+@router.get("/debug/vapid-key")
+def debug_vapid_key():
+    from py_vapid import Vapid
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+    import base64
+    import os
+
+    path = os.getenv("VAPID_PRIVATE_KEY_PATH", "vapid_private.pem")
+
+    try:
+        v = Vapid.from_file(private_key_file=path)
+        raw = v.public_key.public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
+        b64 = base64.urlsafe_b64encode(raw).rstrip(b'=').decode()
+        return {
+            "resolved_path": os.path.abspath(path),
+            "file_exists": os.path.exists(path),
+            "public_key": b64,
+        }
+    except Exception as e:
+        return {
+            "resolved_path": os.path.abspath(path),
+            "file_exists": os.path.exists(path),
+            "error": str(e),
+        }
