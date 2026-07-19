@@ -23,6 +23,8 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
   const [liveSensor, setLiveSensor] = useState<any>(null)
   const [sensorFetchError, setSensorFetchError] = useState<string | null>(null)
   const [sensorLoading, setSensorLoading] = useState(true)
+  const [locationLoading, setLocationLoading] = useState(true)
+  const [locationError, setLocationError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchSensor = async () => {
@@ -44,6 +46,48 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
       }
     }
     fetchSensor()
+  }, [])
+
+  useEffect(() => {
+    const detectLocation = () => {
+      setLocationLoading(true)
+      setLocationError(null)
+
+      if (!navigator.geolocation) {
+        setLocationError('Location detection not supported — enter city manually.')
+        setLocationLoading(false)
+        return
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords
+            const res = await fetch(`/api/weather/location?latitude=${latitude}&longitude=${longitude}`)
+            const data = await res.json()
+
+            if (!res.ok || !data.city) {
+              setLocationError('Could not detect city — enter manually.')
+              setLocationLoading(false)
+              return
+            }
+
+            // Only auto-fill if the user hasn't already typed something
+            setFormData((prev) => (prev.city ? prev : { ...prev, city: data.city }))
+          } catch {
+            setLocationError('Location lookup failed — enter city manually.')
+          } finally {
+            setLocationLoading(false)
+          }
+        },
+        () => {
+          setLocationError('Location permission denied — enter city manually.')
+          setLocationLoading(false)
+        }
+      )
+    }
+
+    detectLocation()
   }, [])
 
   const applySensorReading = () => {
@@ -190,9 +234,15 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
                   <p className="text-xs text-muted-foreground">
                     From device {liveSensor.device_id}. You can still adjust the slider below manually.
                   </p>
+                  {(liveSensor.temperature !== null || liveSensor.humidity !== null) && (
+                    <div className="flex gap-4 mt-3 pt-3 border-t border-primary/10 text-xs text-muted-foreground">
+                      {liveSensor.temperature !== null && <span>🌡️ {liveSensor.temperature}°C (sensor)</span>}
+                      {liveSensor.humidity !== null && <span>💧 {liveSensor.humidity}% humidity (sensor)</span>}
+                      <span className="italic opacity-75">— shown for reference, not yet used in prediction</span>
+                    </div>
+                  )}
                 </div>
               )}
-
               {!sensorLoading && sensorFetchError && (
                 <div className="mb-5 p-3 rounded-lg border border-border bg-secondary text-xs text-muted-foreground flex items-center gap-2">
                   <RefreshCw size={14} />
@@ -266,9 +316,12 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    <Cloud className="inline mr-2" size={16} /> {t('predict_city')}
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-foreground">
+                      <Cloud className="inline mr-2" size={16} /> {t('predict_city')}
+                    </label>
+                    {locationLoading && <span className="text-xs text-muted-foreground">Detecting location...</span>}
+                  </div>
                   <input
                     type="text"
                     name="city"
@@ -277,6 +330,7 @@ export default function Predict({ setCurrentTab }: { setCurrentTab: (tab: string
                     placeholder={t('predict_city_placeholder')}
                     className="w-full px-4 py-2 rounded-lg border border-border bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   />
+                  {locationError && <p className="text-xs text-muted-foreground mt-1">{locationError}</p>}
                 </div>
 
                 {error && (
